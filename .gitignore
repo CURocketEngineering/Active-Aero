@@ -31,3 +31,4 @@
 *.out
 *.app
 .vscode/arduino.json
+.DS_Store
