@@ -1,4 +1,4 @@
-#include <ESP32Servo.h>
+#include <Arduino.h>
 
 #include "telemetry.h"
 #include "apogeeprediction.h"
