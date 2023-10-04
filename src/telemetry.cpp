@@ -1,84 +1,144 @@
 #include "telemetry.h"
 
-Telemetry::Telemetry(): acceleration(64, 0) {}
+Telemetry::Telemetry() {}
 
-void Telemetry::setupTelem() {
-    Serial.println("Initializing BNO and BMP");
-    while (!bmp.begin_I2C()) {}
-    Serial.println("BMP initialized");
-    while (!bno08x.begin_I2C(0x4A)) {}
-    Serial.println("BNO initialized");
-    Serial.println("BNO and BMP initialized");
+void Telemetry::setupSensors() {
+    // Serial.println("Initializing BNO and BMP");
+    // while (!bmp.begin_I2C()) {}
+    // Serial.println("BMP initialized");
+    // while (!bno08x.begin_I2C(0x4A)) {}
+    // Serial.println("BNO initialized");
+    // Serial.println("BNO and BMP initialized");
 
-    setReports();
+    if (!sensorsActivated.imu) {
+        sensorsActivated.imu = setupImu();
+    }
+    if (!sensorsActivated.mag) {
+        sensorsActivated.mag = setupMag();
+    }
+    if (!sensorsActivated.bmp) {
+        sensorsActivated.bmp = setupBmp();
+    }
 }
 
-void Telemetry::setReports() {
-    bno08x.enableReport(SH2_ACCELEROMETER);
-    bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED);
-    bno08x.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED);
-    bno08x.enableReport(SH2_ROTATION_VECTOR);
+bool Telemetry::setupImu() {
+    if (!imu.begin_I2C()) {
+        Serial.println("Failed to find LSM6DSOX chip");
+        return false;
+    }
+
+    Serial.println("LSM6DSOX Found!");
+
+    imu.setAccelRange(LSM6DS_ACCEL_RANGE_16_G);
+    imu.setGyroRange(LSM6DS_GYRO_RANGE_2000_DPS);
+
+    imu.setAccelDataRate(LSM6DS_RATE_104_HZ);
+    imu.setGyroDataRate(LSM6DS_RATE_104_HZ);
+
+    return true;
 }
 
-void Telemetry::pollBNO() {
-  if(!bno08x.getSensorEvent(&sensorValue)) {
-    return;
-  }
-  
-  switch (sensorValue.sensorId) {
-    case SH2_ROTATION_VECTOR:
-        lOrientation = sensorValue;
-        break;
-    case SH2_MAGNETIC_FIELD_CALIBRATED:
-        lMagnetometer = sensorValue;
-        break;
-    case SH2_GYROSCOPE_CALIBRATED:
-        lGyroscope = sensorValue;
-        break;
-    case SH2_ACCELEROMETER:
-        lAcceleration = sensorValue;
-        break;
-  }
+bool Telemetry::setupMag() {
+    if (!mag.begin_I2C()) {
+        Serial.println("Failed to find LIS3MDL chip");
+        return false;
+    }
+
+    Serial.println("LIS3MDL Found!");
+
+    mag.setPerformanceMode(LIS3MDL_MEDIUMMODE);
+    mag.setOperationMode(LIS3MDL_CONTINUOUSMODE);
+    mag.setDataRate(LIS3MDL_DATARATE_155_HZ);
+    mag.setRange(LIS3MDL_RANGE_4_GAUSS);
+
+    mag.setIntThreshold(500);
+    mag.configInterrupt(false, false, true,  // enable z axis
+                        true,                // polarity
+                        false,               // don't latch
+                        true);               // enabled!
+
+    return true;
+}
+
+bool Telemetry::setupBmp() {
+    if (!bmp.begin_I2C()) {
+        Serial.println("Failed to find BMP390 chip");
+        return false;
+    }
+
+    Serial.println("BMP390 Found!");
+
+    bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
+    bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
+    bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
+    bmp.setOutputDataRate(BMP3_ODR_100_HZ);
+
+    return true;
 }
 
 TelemetryData Telemetry::getTelemetry() {
-    std::map<std::string,std::vector<double>> telemetry;
-    std::vector<double> acceleration;
-    std::vector<double> gyroscope;
-    std::vector<double> magnetometer;
-    std::vector<double> orientation;
-    std::vector<double> pressure;
-    std::vector<double> temperature;
-    std::vector<double> altitude;
-    
-    acceleration.push_back(lAcceleration.un.accelerometer.x);
-    acceleration.push_back(lAcceleration.un.accelerometer.y);
-    acceleration.push_back(lAcceleration.un.accelerometer.z);
-    
-    gyroscope.push_back(lGyroscope.un.gyroscope.x);
-    gyroscope.push_back(lGyroscope.un.gyroscope.y);
-    gyroscope.push_back(lGyroscope.un.gyroscope.z);
+    SensorDataMap data;
 
-    magnetometer.push_back(lMagnetometer.un.magneticField.x);
-    magnetometer.push_back(lMagnetometer.un.magneticField.y);
-    magnetometer.push_back(lMagnetometer.un.magneticField.z);
+    SensorData acceleration;
+    SensorData gyro;
+    SensorData temp;
+    imu.getEvent(&acceleration, &gyro, &temp);
+    data["acceleration"] = acceleration;
+    data["gyro"] = gyro;
+    Serial.println("Got IMU Data");
 
-    orientation.push_back(lOrientation.un.rotationVector.i);
-    orientation.push_back(lOrientation.un.rotationVector.j);
-    orientation.push_back(lOrientation.un.rotationVector.k);
-    orientation.push_back(lOrientation.un.rotationVector.real);
-    
-    pressure.push_back(bmp.readPressure());
-    altitude.push_back(bmp.readAltitude(1013.25));
-    temperature.push_back(bmp.readTemperature());
 
-    telemetry["acceleration"] = acceleration;
-    telemetry["gyroscope"] = gyroscope;
-    telemetry["magnetometer"] = magnetometer;
-    telemetry["orientation"] = orientation;
-    telemetry["pressure"] = pressure;
-    telemetry["temperature"] = temperature;
-    telemetry["altitude"] = altitude;
+    SensorData magnetometerData;
+    mag.getEvent(&magnetometerData);
 
-    return telemetry;
+    data["magnetometer"] = magnetometerData;
+    Serial.println("Got Mag Data");
+
+    if (bmp.performReading()) {
+        SensorData temperatureData;
+        temperatureData.temperature = bmp.temperature;
+        data["temperature"] = temperatureData;
+
+        SensorData pressureData;
+        pressureData.pressure = bmp.pressure;
+        data["pressure"] = pressureData;
+
+        SensorData altitudeData;
+        altitudeData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+        data["altitude"] = altitudeData;
+    }
+    Serial.println("Got BMP Data");
+
+    TelemetryData telemData;
+    telemData.timestamp = millis();
+    telemData.sensorData = data;
+
+    return telemData;
+}
+
+#include <sstream>
+
+std::string Telemetry::getSensorConfig() {
+    std::stringstream config;
+
+    config << "Activated:\nImu: " << sensorsActivated.imu
+           << "\nMag: " << sensorsActivated.mag
+           << "\nBMP: " << sensorsActivated.bmp << "\n";
+
+    if (sensorsActivated.imu) {
+        config << "\nIMU Config:\nAccel Range: " << imu.getAccelRange()
+               << "\n - Gyro Range: " << imu.getGyroRange()
+               << "\n - Accel Data Rate: " << imu.getAccelDataRate()
+               << "\n - Gyro Data Rate: " << imu.getGyroDataRate() << "\n";
+    }
+
+    if (sensorsActivated.mag) {
+        config << "\nMag Config:\nPerformance Mode: " << mag.getPerformanceMode()
+               << "\n - Operation Mode: " << mag.getOperationMode()
+               << "\n - Data Rate: " << mag.getDataRate()
+               << "\n - Range: " << mag.getRange()
+               << "\n - Interrupt Threshold: " << mag.getIntThreshold() << "\n";
+    }
+
+    return config.str();
 }
