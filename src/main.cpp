@@ -32,5 +32,7 @@ void loop() {
   TelemetryData telemData = telemetry.getTelemetry();
   Serial.println("Got Telemetry");
   Serial.println(telemData.sensorData["acceleration"].acceleration.x);
+  Serial.println(telemData.sensorData["acceleration"].acceleration.y);
+  Serial.println(telemData.sensorData["altitude"].altitude);
   sleep(1);
 }

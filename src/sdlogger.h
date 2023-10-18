@@ -26,7 +26,7 @@ class SDLogger {
         SDLogger(std::string logFP, std::string telemFP);
         void setup();
         bool writeLog(std::string log);
-        // bool writeData(TelemetryData data, std::string flightStatus);
+        // bool writeData(TelemetryData data);
         void close();
 };
 

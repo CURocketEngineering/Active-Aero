@@ -29,10 +29,10 @@ bool SDLogger::writeLog(std::string log) {
     return true;
 }
 
-bool SDLogger::writeData(TelemetryData data) {
-    std::string dataString = "";
-    return write(dataString);
-}
+// bool SDLogger::writeData(TelemetryData data) {
+//     std::string = "";
+//     return write(dataString);
+// }
 
 void SDLogger::readFile(fs::FS &fs, const char * path){
     Serial.printf("Reading file: %s\n", path);
