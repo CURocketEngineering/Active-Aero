@@ -1,13 +1,17 @@
 #include "unity.h"
+
+#include <Arduino.h>
+
+#include "telemetry.h"
 #include "flightstatus.h"
 
-void setUp(void) {
-    // set stuff up here
-}
+// void setUp(void) {
+//     // set stuff up here
+// }
 
-void tearDown(void) {
-    // clean stuff up here
-}
+// void tearDown(void) {
+//     // clean stuff up here
+// }
 
 void test_initial_stage_is_armed(void) {
     FlightStatus status;
@@ -53,3 +57,21 @@ void test_ground_detection(void) {
     status.newTelemetry(0, 20);
     TEST_ASSERT_EQUAL(ONGROUND, status.getStage());
 }
+
+int runUnityTests(void) {
+  UNITY_BEGIN();
+  RUN_TEST(test_initial_stage_is_armed);
+  RUN_TEST(test_stage_transitions);
+  RUN_TEST(test_apogee_detection);
+  RUN_TEST(test_ground_detection);
+  return UNITY_END();
+}
+
+void setup()
+{
+    delay(2000);
+    
+    runUnityTests();
+}
+
+void loop() {}
