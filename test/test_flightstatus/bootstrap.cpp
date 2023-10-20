@@ -9,11 +9,11 @@
 
 int runUnityTests(void) {
   UNITY_BEGIN();
-    RUN_TEST(test_initial_stage_is_armed);
-    RUN_TEST(test_stage_transitions);
-    RUN_TEST(test_apogee_detection);
-    RUN_TEST(test_ground_detection);
-    return UNITY_END();
+  RUN_TEST(test_initial_stage_is_armed);
+  RUN_TEST(test_stage_transitions);
+  RUN_TEST(test_apogee_detection);
+  RUN_TEST(test_ground_detection);
+  return UNITY_END();
 }
 
 void setup()
