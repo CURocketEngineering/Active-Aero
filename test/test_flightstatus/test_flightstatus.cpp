@@ -1,47 +1,77 @@
-#include <gtest/gtest.h>
+#include "unity.h"
+
+#include <Arduino.h>
+
+#include "telemetry.h"
 #include "flightstatus.h"
 
-TEST(FlightStatusTest, InitialStageIsArmed) {
+// void setUp(void) {
+//     // set stuff up here
+// }
+
+// void tearDown(void) {
+//     // clean stuff up here
+// }
+
+void test_initial_stage_is_armed(void) {
     FlightStatus status;
-    ASSERT_EQ(status.getStage(), ARMED);
+    TEST_ASSERT_EQUAL(ARMED, status.getStage());
 }
 
-TEST(FlightStatusTest, StageTransitions) {
+void test_stage_transitions(void) {
     FlightStatus status;
     status.newTelemetry(10, 0); // Ascent
-    ASSERT_EQ(status.getStage(), ASCENT);
+    TEST_ASSERT_EQUAL(ASCENT, status.getStage());
 
     status.newTelemetry(-10, 0); // Coast
-    ASSERT_EQ(status.getStage(), COAST);
+    TEST_ASSERT_EQUAL(COAST, status.getStage());
 
     status.newTelemetry(0, 0); // Apogee
-    ASSERT_EQ(status.getStage(), APOGEE);
+    TEST_ASSERT_EQUAL(APOGEE, status.getStage());
 
     status.newTelemetry(0, 0); // Descent
-    ASSERT_EQ(status.getStage(), DESCENT);
+    TEST_ASSERT_EQUAL(DESCENT, status.getStage());
 
     status.newTelemetry(0, 10); // On ground
-    ASSERT_EQ(status.getStage(), ONGROUND);
+    TEST_ASSERT_EQUAL(ONGROUND, status.getStage());
 }
 
-TEST(FlightStatusTest, ApogeeDetection) {
+void test_apogee_detection(void) {
     FlightStatus status;
     // Fill altitudeDeque with values that should trigger apogee detection
     for (int i = 0; i < 48; i++) {
         status.newTelemetry(0, i);
     }
-    ASSERT_EQ(status.getStage(), APOGEE);
+    TEST_ASSERT_EQUAL(APOGEE, status.getStage());
 }
 
-TEST(FlightStatusTest, GroundDetection) {
+void test_ground_detection(void) {
     FlightStatus status;
     // Fill altitudeDeque with values that should trigger ground detection
     for (int i = 0; i < 16; i++) {
         status.newTelemetry(0, 100);
     }
     status.newTelemetry(0, 19.9);
-    ASSERT_EQ(status.getStage(), DESCENT);
+    TEST_ASSERT_EQUAL(DESCENT, status.getStage());
 
     status.newTelemetry(0, 20);
-    ASSERT_EQ(status.getStage(), ONGROUND);
+    TEST_ASSERT_EQUAL(ONGROUND, status.getStage());
 }
+
+int runUnityTests(void) {
+  UNITY_BEGIN();
+  RUN_TEST(test_initial_stage_is_armed);
+  RUN_TEST(test_stage_transitions);
+  RUN_TEST(test_apogee_detection);
+  RUN_TEST(test_ground_detection);
+  return UNITY_END();
+}
+
+void setup()
+{
+    delay(2000);
+    
+    runUnityTests();
+}
+
+void loop() {}
