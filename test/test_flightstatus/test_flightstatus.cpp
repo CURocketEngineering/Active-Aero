@@ -2,8 +2,8 @@
 
 #include <Arduino.h>
 
-#include "telemetry.h"
-#include "flightstatus.h"
+// #include "telemetry.h"
+#include <flightstatus.h>
 
 // void setUp(void) {
 //     // set stuff up here
@@ -53,7 +53,7 @@ void test_ground_detection(void) {
     }
     status.newTelemetry(0, 19.9);
     TEST_ASSERT_EQUAL(DESCENT, status.getStage());
-
+    
     status.newTelemetry(0, 20);
     TEST_ASSERT_EQUAL(ONGROUND, status.getStage());
 }
