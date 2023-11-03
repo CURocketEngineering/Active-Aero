@@ -20,6 +20,10 @@ class AHRS {
 
     float getAccelX();
 
+    //pass accel struct w x y z 
+    //pass pointer struct and update
+    //turn into getAccel
+
     //void getHeading(); //some heading pointer depends on how they want the values, if at all
 
     void getGravityVector(float* x, float* y, float* z); //not sure how different this is from accelY but the library has support for both so ill provide access to both
