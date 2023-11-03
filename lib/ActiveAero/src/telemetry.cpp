@@ -85,14 +85,12 @@ TelemetryData Telemetry::getTelemetry() {
     imu.getEvent(&acceleration, &gyro, &temp);
     data["acceleration"] = acceleration;
     data["gyro"] = gyro;
-    Serial.println("Got IMU Data");
 
 
     SensorData magnetometerData;
     mag.getEvent(&magnetometerData);
 
     data["magnetometer"] = magnetometerData;
-    Serial.println("Got Mag Data");
 
     if (bmp.performReading()) {
         SensorData temperatureData;
@@ -107,7 +105,6 @@ TelemetryData Telemetry::getTelemetry() {
         altitudeData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
         data["altitude"] = altitudeData;
     }
-    Serial.println("Got BMP Data");
 
     TelemetryData telemData;
     telemData.timestamp = millis();
@@ -115,8 +112,6 @@ TelemetryData Telemetry::getTelemetry() {
 
     return telemData;
 }
-
-#include <sstream>
 
 std::string Telemetry::getSensorConfig() {
     std::stringstream config;

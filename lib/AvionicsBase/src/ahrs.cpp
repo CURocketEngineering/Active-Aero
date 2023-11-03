@@ -5,7 +5,7 @@ void AHRS::stateUpdate(float ax, float ay, float az, float gx, float gy, float g
 }
 
 
-float getAccelY(){
+float getAccelY() {
 
 }
 
