@@ -17,9 +17,9 @@ float getAccelX(){
 
 }
 
-void getHeading(){
+//void getHeading(){
 
-}
+//}
 
 void getGravityVector(){
 

@@ -20,9 +20,9 @@ class AHRS {
 
     float getAccelX();
 
-    void getHeading(); //some heading pointer depends on how they want the values, if at all
+    //void getHeading(); //some heading pointer depends on how they want the values, if at all
 
-    void getGravityVector(); //not sure how different this is from accelY but the library has support for both so ill provide access to both
+    void getGravityVector(float* x, float* y, float* z); //not sure how different this is from accelY but the library has support for both so ill provide access to both
 
     void getQuaternion(float* w, float* x, float* y, float* z);
 
