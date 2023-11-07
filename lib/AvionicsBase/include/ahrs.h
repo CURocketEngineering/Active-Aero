@@ -9,15 +9,21 @@ public:
     AHRS(){
 
     };
-    Adafruit_NXPSensorFusion fusor;
+    Adafruit_NXPSensorFusion interface;
 
     void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz)
     {
         //Serial.println("update called...");
-        fusor.update(gx, gy, gz, ax, ay, az, mx, my, mz);
-        RVecPl[0] = fusor.RVecPl[0];
-        RVecPl[1] = fusor.RVecPl[1];
-        RVecPl[2] = fusor.RVecPl[2];
+        interface.update(gx, gy, gz, ax, ay, az, mx, my, mz);
+        RVecPl[0] = interface.RVecPl[0];
+        RVecPl[1] = interface.RVecPl[1];
+        RVecPl[2] = interface.RVecPl[2];
+        gSeGyMi[0] = interface.gSeGyMi[0];
+        gSeGyMi[1] = interface.gSeGyMi[1];
+        gSeGyMi[2] = interface.gSeGyMi[2];
+        aGlPl[0] = interface.aGlPl[0];
+        aGlPl[1] = interface.aGlPl[1];
+        aGlPl[2] = interface.aGlPl[2];
     }
     //* fQuaternionFromRotationVectorDeg(Quaternion_t *pq, const float rvecdeg[], float fscaling)
     // fQuaternionFromRotationMatrix(float R[][3], Quaternion_t *pq)
@@ -29,7 +35,7 @@ public:
     {
         this->sampleFrequency = sampleFrequency;
         setRotationVector(0, 0, 0);
-        fusor.begin(sampleFrequency);
+        interface.begin(sampleFrequency);
     };
 
     void getRotationVector(float *x, float *y, float *z)
@@ -68,9 +74,9 @@ public:
 
     void getLinearAcceleration(float *x, float *y, float *z) const
     {
-        *x = aSePl[0];
-        *y = aSePl[1];
-        *z = aSePl[2];
+        *x = aGlPl[0];
+        *y = aGlPl[1];
+        *z = aGlPl[2];
     } // in g
     void getGravityVector(float *x, float *y, float *z)
     {

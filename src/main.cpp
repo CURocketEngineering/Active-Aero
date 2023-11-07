@@ -8,7 +8,7 @@
 
 SDLogger sdLogger;
 Telemetry telemetry;
-Adafruit_NXPSensorFusion ahrs;
+AHRS ahrs;
 
 double baseAlt;
 
@@ -40,7 +40,7 @@ void loop() {
   Serial.println(telemData.sensorData["acceleration"].acceleration.y);
   Serial.println(telemData.sensorData["altitude"].altitude);
 
-  Serial.println("Updating AHRS State");
+  //Serial.println("Updating AHRS State");
   ahrs.update(telemData.sensorData["gyro"].gyro.x, 
               telemData.sensorData["gyro"].gyro.y, 
               telemData.sensorData["gyro"].gyro.z, 
@@ -50,13 +50,15 @@ void loop() {
               telemData.sensorData["magnetometer"].magnetic.x, 
               telemData.sensorData["magnetometer"].magnetic.y, 
               telemData.sensorData["magnetometer"].magnetic.z);
-  Serial.println("AHRS State Updated");
+  //Serial.println("AHRS State Updated");
   float rx, ry, rz;
   ahrs.getRotationVector(&rx,&ry,&rz);
-  Serial.printf("rx=%f \try=%f \trz=%f\n", rx, ry, rz);
+  Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz);
   float gx, gy, gz;
   ahrs.getGravityVector(&gx, &gy, &gz);
-  Serial.printf("gx=%f gy=%f gz=%f\n", gx, gy, gz);
+  Serial.printf("\tgx=%f \tgy=%f \tgz=%f", gx, gy, gz);
+  float ax, ay, az;
+  Serial.printf("\tax=%f \tay=%f \taz=%f\n", ax, ay, az);
 
-  sleep(0.5);
+  sleep(1);
 }
