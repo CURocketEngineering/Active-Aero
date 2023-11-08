@@ -20,7 +20,9 @@ public:
     void begin(float sampleFrequency = 115200.0F)
     {
         interface.begin(sampleFrequency);
-        interface.setRotationVector(0, 0, 0);
+        interface.setRotationVector(0, 0, 0);//why is the arduino/pio library different per system 
+        //this will cause an error for anyone compiling not on my laptop, how can i get this without modifying the library but keeping the interface object???
+        //i might not be able to, so the object sync might have to be moved back when i can do that next
     };
 
     void getRotationVector(float *x, float *y, float *z)
