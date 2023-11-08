@@ -60,5 +60,5 @@ void loop() {
   float ax, ay, az;
   Serial.printf("\tax=%f \tay=%f \taz=%f\n", ax, ay, az);
 
-  sleep(1);
+  sleep(0.1);
 }
