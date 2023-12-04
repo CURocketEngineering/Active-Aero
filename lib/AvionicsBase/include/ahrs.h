@@ -3,18 +3,21 @@
 #include "Adafruit_AHRS_FusionInterface.h"
 #include "Adafruit_AHRS_NXPFusion.h"
 
+//proper units and directions + coherence
+
 class AHRS : public Adafruit_AHRS_FusionInterface
 {
 public:
     AHRS(){
 
     };
-    Adafruit_NXPSensorFusion interface;
+    //All that we'll ultimately end up using will probably be gvy
+    Adafruit_NXPSensorFusion interface; //debating also switching to one of the alternative AHRSs for simplicity sake/speed sake
     //I just noticed that magnetometer and accelerometer XYZ aren't the same are we using raw data or are we accounting for them in telem?
 
     void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz)
     {
-        interface.update(gx, gy, gz, ax, ay, az, mx, my, mz);
+        interface.update(gx, gy, gz, ax, ay, az, my*-1, mx, mz); //align physically with the sensors //will have to change with a new board
     }
 
     void begin(float sampleFrequency = 115200.0F)

@@ -40,7 +40,9 @@ void loop() {
   Serial.println(telemData.sensorData["acceleration"].acceleration.y);
   Serial.println(telemData.sensorData["altitude"].altitude);
 
-  //Serial.println("Updating AHRS State");
+  Serial.println("Updating AHRS State");
+  
+  
   ahrs.update(telemData.sensorData["gyro"].gyro.x, 
               telemData.sensorData["gyro"].gyro.y, 
               telemData.sensorData["gyro"].gyro.z, 
@@ -50,7 +52,8 @@ void loop() {
               telemData.sensorData["magnetometer"].magnetic.x, 
               telemData.sensorData["magnetometer"].magnetic.y, 
               telemData.sensorData["magnetometer"].magnetic.z);
-  //Serial.println("AHRS State Updated");
+  Serial.println("AHRS State Updated");
+  
   float rx, ry, rz;
   ahrs.getRotationVector(&rx,&ry,&rz);
   Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz);
@@ -59,6 +62,8 @@ void loop() {
   Serial.printf("\tgx=%f \tgy=%f \tgz=%f", gx, gy, gz);
   float ax, ay, az;
   Serial.printf("\tax=%f \tay=%f \taz=%f\n", ax, ay, az);
-
+  /*Serial.printf("mx=%f \tmy=%f \tmz=%f\n",telemData.sensorData["magnetometer"].magnetic.x, 
+              telemData.sensorData["magnetometer"].magnetic.y, 
+              telemData.sensorData["magnetometer"].magnetic.z);*/ //having some issues where the magnetometer isnt always connected
   sleep(0.1);
 }

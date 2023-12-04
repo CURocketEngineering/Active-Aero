@@ -6,14 +6,14 @@ using namespace Eigen;
 
 // Define the state vector (position, velocity, acceleration) and measurement vector (altitude, vertical velocity, vertical acceleration)
 typedef Matrix<float, 9, 1> StateVector;
-typedef Matrix<float, 3, 1> MeasurementVector;
+typedef Matrix<float, 2, 1> MeasurementVector;
 
 // Define Kalman Filter matrices (A, H, Q, R, P)
-Matrix<float, 9, 9> A; // State transition matrix
-Matrix<float, 3, 9> H; // Measurement matrix
-Matrix<float, 9, 9> Q; // Process noise covariance
-Matrix<float, 3, 3> R; // Measurement noise covariance
-Matrix<float, 9, 9> P; // Estimate error covariance
+Matrix<float, 4, 4> A; // State transition matrix
+Matrix<float, 2, 4> H; // Measurement matrix
+Matrix<float, 4, 4> Q; // Process noise covariance
+Matrix<float, 2, 2> R; // Measurement noise covariance
+Matrix<float, 4, 4> P; // Estimate error covariance
 
 StateVector x_hat; // Estimated state
 
@@ -46,13 +46,13 @@ void Predict()
 void Update(const MeasurementVector &measurement)
 {
     // Calculate the Kalman gain
-    Matrix<float, 9, 3> K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
+    Matrix<float, 4, 2> K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
 
     // Update the state estimate based on the measurement and Kalman gain
     x_hat = x_hat + K * (measurement - H * x_hat);
 
     // Update the error covariance matrix P
-    P = (Matrix<float, 9, 9>::Identity() - K * H) * P;
+    P = (Matrix<float, 4, 4>::Identity() - K * H) * P;
 }
 
 int main()
