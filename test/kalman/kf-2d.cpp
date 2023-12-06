@@ -25,7 +25,7 @@ void InitializeKalmanFilter()
 
     // Initialize the state vector with initial values
     x_hat << 0, 0, 0, // Initial position (x, y, z)
-        0, 0, 0,      // Initial velocity (vx, vy, vz)
+        0, 0, 0,      // Initial velocity (vx, vy, vz) //
         0, 0, 0;      // Initial acceleration (ax, ay, az)
 
     // Initialize the error covariance matrix P with appropriate values
@@ -62,9 +62,9 @@ int main()
 
     // Simulate measurements (altitude, vertical velocity, vertical acceleration)
     MeasurementVector measurement;
-    measurement << 1000, 50, -9.81; // Example measurement values
+    measurement << 1000, -9.81; // Example measurement values //no V measurement, just pos and acc
 
-    // Kalman Filter loop
+    // Kalman Filter loop, wont really be a thing here, only call in main
     for (int i = 0; i < 10; ++i)
     {
         // Prediction step
