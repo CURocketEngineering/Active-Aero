@@ -1,8 +1,8 @@
 #ifndef AHRS_H
 #define AHRS_H
 
-#include "Adafruit_AHRS_FusionInterface.h"
-#include "Adafruit_AHRS_NXPFusion.h"
+#include <Adafruit_AHRS_FusionInterface.h>
+#include <Adafruit_AHRS_NXPFusion.h>
 
 //proper units and directions + coherence
 
