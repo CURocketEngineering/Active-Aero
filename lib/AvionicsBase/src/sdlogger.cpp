@@ -3,6 +3,11 @@
 SDLogger::SDLogger() {
     logFile = "/logs.txt";
     telemFile = "/telemetry.csv";
+
+    // gyroscopeFile = "/gyroscope.curedf";
+    // accelerometerFile = "/accelerometer.curedf";
+    // magnetometerFile = "/magnetometer.curedf";
+    // barometerFile = "/barometer.curedf";
 }
 
 SDLogger::SDLogger(std::string logFP = "/logs.txt", std::string telemFP = "/telemetry.csv") {
@@ -14,11 +19,11 @@ void SDLogger::setup() {
   Serial.print("Initializing SD card...");
 
   pinMode(10, OUTPUT);
-  if(!SD.begin(10)) {
+  while(!SD.begin(10)) {
     Serial.println("Initialization failed!");
-  } else {
-    Serial.println("Initialization done.");
+    sleep(5);
   }
+  Serial.println("Initialization done.");
 
   Serial.println("Finished SD Setup!");
 }
@@ -29,10 +34,50 @@ bool SDLogger::writeLog(std::string log) {
     return true;
 }
 
-// bool SDLogger::writeData(TelemetryData data) {
-//     std::string = "";
-//     return write(dataString);
-// }
+bool SDLogger::writeData(TelemetryData data, AHRSMap ahrsData, int flightStatus) {
+    if(data.timestamp == lastData.timestamp) {
+        return false;
+    } else {
+        // if(data.sensorData["acceleration"].timestamp != lastData.sensorData["acceleration"].timestamp) {
+        //     appendFileData(SD, accelerometerFile, data.sensorData["acceleration"]);
+        // }
+        // if(data.sensorData["gyro"].timestamp != lastData.sensorData["gyro"].timestamp) {
+        //     appendFileData(SD, gyroscopeFile, data.sensorData["gyro"]);
+        // }
+        // if(data.sensorData["magnetometer"].timestamp != lastData.sensorData["magnetometer"].timestamp) {
+        //     appendFileData(SD, magnetometerFile, data.sensorData["magnetometer"]);
+        // }
+        // if(data.sensorData["pressure"].timestamp != lastData.sensorData["pressure"].timestamp) {
+        //     appendFileData(SD, barometerFile, data.sensorData["temperature"]);
+        //     appendFileData(SD, barometerFile, data.sensorData["pressure"]);
+        //     appendFileData(SD, barometerFile, data.sensorData["altitude"]);
+        // }
+
+        appendFile(SD, telemFile, (std::to_string(data.timestamp) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["acceleration"].acceleration.x) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["acceleration"].acceleration.y) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["acceleration"].acceleration.z) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["gyro"].gyro.x) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["gyro"].gyro.y) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["gyro"].gyro.z) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["magnetometer"].magnetic.x) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["magnetometer"].magnetic.y) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["magnetometer"].magnetic.z) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["temperature"].temperature) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["pressure"].pressure) + ",").c_str());
+
+        appendFile(SD, telemFile, (std::to_string(ahrsData["rx"]) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(ahrsData["ry"]) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(ahrsData["rz"]) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(ahrsData["gx"]) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(ahrsData["gy"]) + ",").c_str());
+        appendFile(SD, telemFile, (std::to_string(ahrsData["gz"]) + "\n").c_str());
+
+        appendFile(SD, telemFile, (std::to_string(flightStatus) + ",").c_str());
+
+        appendFile(SD, telemFile, (std::to_string(data.sensorData["altitude"].altitude) + "\n").c_str());
+    }
+}
 
 void SDLogger::readFile(fs::FS &fs, const char * path){
     Serial.printf("Reading file: %s\n", path);
@@ -100,6 +145,24 @@ void SDLogger::deleteFile(fs::FS &fs, const char * path){
     } else {
         Serial.println("Delete failed");
     }
+}
+
+bool SDLogger::appendFileData(fs::FS &fs, const char *path, const SensorData &data) {
+    File file = fs.open(path, FILE_APPEND);
+    if (!file) {
+        // Serial.println("Failed to open file for appending");
+        return false;
+    }
+
+    // Convert SensorData to bytes
+    const byte* bytes = reinterpret_cast<const byte*>(&data);
+    size_t dataSize = sizeof(data);
+
+    // Append the bytes to the file
+    bool successful = file.write(bytes, dataSize) == dataSize;
+    file.close();
+    
+    return successful;
 }
 
 

@@ -6,6 +6,8 @@
 
 //proper units and directions + coherence
 
+typedef std::map<std::string, float> AHRSMap;
+
 class AHRS : public Adafruit_AHRS_FusionInterface
 {
 public:
