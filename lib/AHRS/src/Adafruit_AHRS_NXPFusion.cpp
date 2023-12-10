@@ -38,26 +38,26 @@
 #include "Adafruit_AHRS_NXPFusion.h"
 
 // kalman filter noise variances
-#define FQVA_9DOF_GBY_KALMAN 10E-37F // accelerometer noise g^2 so 1.4mg RMS
-#define FQVM_9DOF_GBY_KALMAN 10E-37F  // magnetometer noise uT^2
-#define FQVG_9DOF_GBY_KALMAN 10E-37F  // gyro noise (deg/s)^2
+#define FQVA_9DOF_GBY_KALMAN 1E-15F // accelerometer noise g^2 so 1.4mg RMS
+#define FQVM_9DOF_GBY_KALMAN 1E-15F  // magnetometer noise uT^2
+#define FQVG_9DOF_GBY_KALMAN 1E-15F  // gyro noise (deg/s)^2
 #define FQWB_9DOF_GBY_KALMAN                                                   \
-  10E-37F // gyro offset drift (deg/s)^2: 1E-9 implies 0.09deg/s max at 50Hz
+  1E-25F // gyro offset drift (deg/s)^2: 1E-9 implies 0.09deg/s max at 50Hz
 #define FQWA_9DOF_GBY_KALMAN                                                   \
-  10E-37F // linear acceleration drift g^2 (increase slows convergence to g but
+  1E-25F // linear acceleration drift g^2 (increase slows convergence to g but
         // reduces sensitivity to shake)
 #define FQWD_9DOF_GBY_KALMAN                                                   \
   10E-37F // magnetic disturbance drift uT^2 (increase slows convergence to B but
        // reduces sensitivity to magnet)
 // initialization of Qw covariance matrix
-#define FQWINITTHTH_9DOF_GBY_KALMAN 2000E-5F // th_e * th_e terms
-#define FQWINITBB_9DOF_GBY_KALMAN 250E-3F    // b_e * b_e terms
+#define FQWINITTHTH_9DOF_GBY_KALMAN 2E-2F // th_e * th_e terms
+#define FQWINITBB_9DOF_GBY_KALMAN 2E-2F    // b_e * b_e terms
 #define FQWINITTHB_9DOF_GBY_KALMAN 0.0F      // th_e * b_e terms
 #define FQWINITAA_9DOF_GBY_KALMAN                                              \
-  10E-37F // a_e * a_e terms (increase slows convergence to g but reduces
+  10E-1F // a_e * a_e terms (increase slows convergence to g but reduces
          // sensitivity to shake) //10E-5F
 #define FQWINITDD_9DOF_GBY_KALMAN                                              \
-  600E-25F // d_e * d_e terms (increase slows convergence to B but reduces
+  10E-1F // d_e * d_e terms (increase slows convergence to B but reduces
           // sensitivity to magnet)
 // linear acceleration and magnetic disturbance time constants
 #define FCA_9DOF_GBY_KALMAN 10E-37F // linear acceleration decay factor
