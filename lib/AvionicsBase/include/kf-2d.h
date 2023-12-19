@@ -7,8 +7,7 @@ using namespace linalg;
 
 class KF2D
 {
-    public:
-
+public:
     // Derivables and measurables
     int n = 3; // Number of state variables, measurable or derivable by equations
     int m = 2; // Number of measurable variables by sensor //will be 3 with pitot or vin --> replace all 2's with 3's
@@ -19,6 +18,12 @@ class KF2D
 
     StateVector x_hat; // Estimated state
 
+    KF2D();                                        // constructor
+    void InitializeKalmanFilter(); // initialize, only needs to run once. can also be used to reset a KF. should be ran at
+    void Predict();                                // should I also have a delta time predict?? or take average over time dt and use that
+    void Update(const MeasurementVector &measurement, float delta_time);
+
+    private:
     // Define Kalman Filter matrices (P, A, H, R, Q)
     mat<float, 3, 3> P; // Estimate error covariance
     mat<float, 3, 3> A; // State transition matrix
@@ -26,12 +31,6 @@ class KF2D
     mat<float, 2, 2> R; // Measurement noise covariance matrix
     mat<float, 3, 3> Q; // Process noise covariance matrix
 
-    KF2D(); //constructor
-    void InitializeKalmanFilter(float delta_time); //initialize, only needs to run once. can also be used to reset a KF. should be ran at 
-    void Predict(); //should I also have a delta time predict?? or take average over time dt and use that 
-    void Update(const MeasurementVector& measurement, float delta_time);
-
 };
-
 
 #endif

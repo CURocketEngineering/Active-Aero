@@ -8,13 +8,13 @@
 KF2D::KF2D() {} // default constructor, don't want a static KF
 
 // Initialize Kalman Filter matrices and state vector
-void KF2D::InitializeKalmanFilter(float delta_time)
+void KF2D::InitializeKalmanFilter()
 {
     // Initialize P, A, H, R, Q with appropriate values //NEEDS TO BE DONE
     // dt will NOT be consistent between updates, so they need to be replaced every update
     // This depends on the specifics of the system and sensor characteristics
 
-    //P is symmetric, no need to col maj (for now)
+    // P is symmetric, no need to col maj (for now)
     P = {{1, 1, 1},
          {1, 1, 1},
          {1, 1, 1}};
@@ -26,27 +26,26 @@ void KF2D::InitializeKalmanFilter(float delta_time)
          */
 
     A = {{1, 0, 0},
-         {delta_time, 1, 0},
-         {(float)(0.5*delta_time*delta_time), delta_time, 1}};
+         {0, 1, 0},
+         {0, 0, 1}};
 
- /* //this is what it SHOULD look like written out by hand, but linalg is col maj
-    H = {{1.0, 0.0, 0.0},
-        {0.0, 0.0, 1.0}};
-        */
+    /* //this is what it SHOULD look like written out by hand, but linalg is col maj
+       H = {{1.0, 0.0, 0.0},
+           {0.0, 0.0, 1.0}};
+           */
     H = {{1, 0}, {0, 0}, {0, 1}};
-   
-    //R is symmetric, no need to col maj (for now)
+
+    // R is symmetric, no need to col maj (for now)
     R = {{0.1, 0},
          {0, 0.1}}; // will be 0.1,0,0 ; 0,0.1,0 ; 0,0,0.1 in 3d, or whatever R float instead of 0.1
-    
-    //Q is symmetric, no need to col maj (for now)
+
+    // Q is symmetric, no need to col maj (for now)
     Q = {{0.1, 0.1, 0.1},
          {0.1, 0.1, 0.1},
          {0.1, 0.1, 0.1}};
 
     // Initialize the state vector with initial values
     x_hat[0] = {0, 0, 0}; // Initial posititon, velocity, acceleration (y, vy, ay)
-
 }
 
 // Predict the next state using the process model
@@ -65,6 +64,10 @@ void KF2D::Predict()
 // In either case, it needs to be update in state matrices using dt
 void KF2D::Update(const MeasurementVector &measurement, float delta_time)
 {
+    A = {{1, 0, 0},
+         {delta_time, 1, 0},
+         {(float)(0.5 * delta_time * delta_time), delta_time, 1}};
+
     // Calculate the Kalman gain
     mat<float, 3, 2> K = mul(mul(P, transpose(H)), inverse(mul(mul(H, P), transpose(H)) + R));
 
