@@ -5,6 +5,7 @@
 #include "flightstatus.h"
 #include "sdlogger.h"
 #include "ahrs.h"
+#include "kf-2d.h"
 
 SDLogger sdLogger;
 Telemetry telemetry;
@@ -13,11 +14,12 @@ AHRS ahrs;
 
 double baseAlt;
 
-void setup() {
+void setup()
+{
   sleep(5);
   // put your setup code here, to run once:
   Serial.begin(115200);
-  while (!Serial) {}
+  // while (!Serial) {}
   Serial.println("Starting up");
 
   sdLogger.setup();
@@ -27,27 +29,29 @@ void setup() {
   Serial.println(telemetry.getSensorConfig().c_str());
   sdLogger.writeLog(telemetry.getSensorConfig());
 
-  ahrs.begin(115200);//sample frequency 
-  ahrs.setRotationVector(0,0,0);
-  
+  ahrs.begin(115200); // sample frequency
+  ahrs.setRotationVector(0, 0, 0);
+
   Serial.println("Finished setup");
+
 }
 
-void loop() {
+void loop()
+{
   TelemetryData telemData = telemetry.getTelemetry();
-  
-  ahrs.update(telemData.sensorData["gyro"].gyro.x, 
-              telemData.sensorData["gyro"].gyro.y, 
-              telemData.sensorData["gyro"].gyro.z, 
-              telemData.sensorData["acceleration"].acceleration.x, 
-              telemData.sensorData["acceleration"].acceleration.y, 
-              telemData.sensorData["acceleration"].acceleration.z, 
-              telemData.sensorData["magnetometer"].magnetic.x, 
-              telemData.sensorData["magnetometer"].magnetic.y, 
+
+  ahrs.update(telemData.sensorData["gyro"].gyro.x,
+              telemData.sensorData["gyro"].gyro.y,
+              telemData.sensorData["gyro"].gyro.z,
+              telemData.sensorData["acceleration"].acceleration.x,
+              telemData.sensorData["acceleration"].acceleration.y,
+              telemData.sensorData["acceleration"].acceleration.z,
+              telemData.sensorData["magnetometer"].magnetic.x,
+              telemData.sensorData["magnetometer"].magnetic.y,
               telemData.sensorData["magnetometer"].magnetic.z);
 
   float rx, ry, rz;
-  ahrs.getRotationVector(&rx,&ry,&rz);
+  ahrs.getRotationVector(&rx, &ry, &rz);
   // Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz);
   float gx, gy, gz;
   ahrs.getGravityVector(&gx, &gy, &gz);

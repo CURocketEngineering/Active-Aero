@@ -71,11 +71,13 @@ bool SDLogger::writeData(TelemetryData data, AHRSMap ahrsData, int flightStatus)
         appendFile(SD, telemFile, (std::to_string(ahrsData["rz"]) + ",").c_str());
         appendFile(SD, telemFile, (std::to_string(ahrsData["gx"]) + ",").c_str());
         appendFile(SD, telemFile, (std::to_string(ahrsData["gy"]) + ",").c_str());
-        appendFile(SD, telemFile, (std::to_string(ahrsData["gz"]) + "\n").c_str());
+        appendFile(SD, telemFile, (std::to_string(ahrsData["gz"]) + "\n").c_str()); //is this why it was double spaced
 
         appendFile(SD, telemFile, (std::to_string(flightStatus) + ",").c_str());
 
         appendFile(SD, telemFile, (std::to_string(data.sensorData["altitude"].altitude) + "\n").c_str());
+
+        return true;
     }
 }
 
