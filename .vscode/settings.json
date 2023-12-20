@@ -60,7 +60,11 @@
         "iostream": "cpp",
         "mutex": "cpp",
         "thread": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "bitset": "cpp",
+        "csignal": "cpp",
+        "regex": "cpp",
+        "variant": "cpp"
     },
     "cmake.configureOnOpen": false
 }

@@ -2,34 +2,38 @@
 #define KF2D_H
 
 #include <linalg.h> //matrix declaration is column major
+#include <chrono> //for keeping track of dt between updates
 using namespace linalg::aliases;
 using namespace linalg;
+using namespace std::chrono;
 
 class KF2D
 {
 public:
     // Derivables and measurables
     int n = 3; // Number of state variables, measurable or derivable by equations
-    int m = 2; // Number of measurable variables by sensor //will be 3 with pitot or vin --> replace all 2's with 3's
+    int m = 2; // Number of measurable variables by sensor //will be 3 with pitot or vin --> replace all 2's with 3's & measurementvector with float3
+
+    float lastTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();; //keep track of the last time in millis
 
     // Define the state vector (position, velocity, acceleration) and measurement vector (altitude, vertical velocity, vertical acceleration)
-    typedef mat<float, 3, 1> StateVector;       // state variable x
-    typedef mat<float, 2, 1> MeasurementVector; // state measurement z
+    typedef float3 StateVector;       // state variable x, 3 float vector
+    typedef float2 MeasurementVector; // state measurement z, 2 float vector // will be 3 with pitot or vin
 
     StateVector x_hat; // Estimated state
 
-    KF2D();                                        // constructor
-    void InitializeKalmanFilter(); // initialize, only needs to run once. can also be used to reset a KF. should be ran at
-    void Predict();                                // should I also have a delta time predict?? or take average over time dt and use that
-    void Update(const MeasurementVector &measurement, float delta_time);
+    KF2D();                             // constructor
+    void InitializeKalmanFilter();      // initialize, only needs to run once. can also be used to reset a KF. should be ran at
+    void Predict();                     // should I also have a delta time predict?? or take average over time dt and use that
+    void Update(const MeasurementVector &measurement);
 
     private:
     // Define Kalman Filter matrices (P, A, H, R, Q)
-    mat<float, 3, 3> P; // Estimate error covariance
-    mat<float, 3, 3> A; // State transition matrix
-    mat<float, 2, 3> H; // State to measurement matrix
-    mat<float, 2, 2> R; // Measurement noise covariance matrix
-    mat<float, 3, 3> Q; // Process noise covariance matrix
+    mat<float, 3, 3> P; // Estimate error covariance //n,n
+    mat<float, 3, 3> A; // State transition matrix //n,n
+    mat<float, 2, 3> H; // State to measurement matrix //m,n
+    mat<float, 2, 2> R; // Measurement noise covariance matrix //m,m
+    mat<float, 3, 3> Q; // Process noise covariance matrix //n,n
 
 };
 

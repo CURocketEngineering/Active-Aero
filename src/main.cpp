@@ -11,8 +11,10 @@ SDLogger sdLogger;
 Telemetry telemetry;
 FlightStatus flightStatus;
 AHRS ahrs;
+KF2D KF;
 
 double baseAlt;
+KF2D::MeasurementVector measurement;
 
 void setup()
 {
@@ -22,18 +24,18 @@ void setup()
   // while (!Serial) {}
   Serial.println("Starting up");
 
-  sdLogger.setup();
+  //sdLogger.setup();
 
   telemetry.setupSensors();
-  sdLogger.writeLog("Setup complete");
+  //sdLogger.writeLog("Setup complete");
   Serial.println(telemetry.getSensorConfig().c_str());
-  sdLogger.writeLog(telemetry.getSensorConfig());
+  //sdLogger.writeLog(telemetry.getSensorConfig());
 
   ahrs.begin(115200); // sample frequency
   ahrs.setRotationVector(0, 0, 0);
+  KF.InitializeKalmanFilter();
 
   Serial.println("Finished setup");
-
 }
 
 void loop()
@@ -66,6 +68,11 @@ void loop()
   ahrsData["gz"] = gz;
 
   flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["pressure"].pressure);
-
-  sdLogger.writeData(telemData, ahrsData, flightStatus.getStage());
+  
+  measurement = {telemData.sensorData["altitude"].altitude, telemData.sensorData["acceleration"].acceleration.z}; //want y then ay
+  Serial.printf("altitude = %f, \t acceleration = %f\n", measurement[0], measurement[1]);
+  KF.Update(measurement);
+  KF.Predict();
+  //Serial.printf("x_hat: \t%fm, \t%fm/s, \t%fm/s/s\n", KF.x_hat[0], KF.x_hat[1], KF.x_hat[2]);
+  //sdLogger.writeData(telemData, ahrsData, flightStatus.getStage());
 }
