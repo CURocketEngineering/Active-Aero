@@ -15,6 +15,7 @@ KF2D KF;
 
 double baseAlt;
 KF2D::MeasurementVector measurement;
+TelemetryData telemData;
 
 void setup()
 {
@@ -33,14 +34,16 @@ void setup()
 
   ahrs.begin(115200); // sample frequency
   ahrs.setRotationVector(0, 0, 0);
-  KF.InitializeKalmanFilter();
+  //the next 2 lines should be run when launch state is detected instead of at start
+  measurement = {telemData.sensorData["altitude"].altitude, (-1)*telemData.sensorData["acceleration"].acceleration.z}; //want y then ay
+  KF.InitializeKalmanFilter(measurement);
 
   Serial.println("Finished setup");
 }
 
 void loop()
 {
-  TelemetryData telemData = telemetry.getTelemetry();
+  telemData = telemetry.getTelemetry();
 
   ahrs.update(telemData.sensorData["gyro"].gyro.x,
               telemData.sensorData["gyro"].gyro.y,
@@ -69,10 +72,13 @@ void loop()
 
   flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["pressure"].pressure);
   
-  measurement = {telemData.sensorData["altitude"].altitude, telemData.sensorData["acceleration"].acceleration.z}; //want y then ay
-  Serial.printf("altitude = %f, \t acceleration = %f\n", measurement[0], measurement[1]);
+  
+  Serial.printf("altitude = %f, \t y-acceleration = %f\t", measurement[0], measurement[1]);
+  //The next 3 lines should be run on loop after launch is detected
+  measurement = {telemData.sensorData["altitude"].altitude, (float)(-9.81+telemData.sensorData["acceleration"].acceleration.z)}; //want y then ay- NOT g //eventually needs to move to AHRS vertical accel
   KF.Update(measurement);
   KF.Predict();
-  //Serial.printf("x_hat: \t%fm, \t%fm/s, \t%fm/s/s\n", KF.x_hat[0], KF.x_hat[1], KF.x_hat[2]);
+  Serial.printf("x_hat: \t%f m, \t%f m/s, \t%f m/s/s\n", KF.x_hat[0], KF.x_hat[1], KF.x_hat[2]);
+  
   //sdLogger.writeData(telemData, ahrsData, flightStatus.getStage());
 }
