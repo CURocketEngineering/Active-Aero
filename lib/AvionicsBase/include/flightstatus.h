@@ -17,13 +17,17 @@ enum Stage {
 class FlightStatus {
   private:
     Stage flightStage;
+    int hz;
+    double currentAccel;
     std::deque<double> altitudeDeque;
 
     double median(std::vector<double> vec);
+    bool checkLaunch();
+    bool checkCoast();
     bool checkApogee();
     bool checkGround();
   public:
-    FlightStatus();
+    FlightStatus(int sensorHz = 32);
     void newTelemetry(double acceleration, double altitude);
     Stage getStage();
 };

@@ -1,7 +1,9 @@
 #include "flightstatus.h"
 
-FlightStatus::FlightStatus(): altitudeDeque(128, 0) {
+FlightStatus::FlightStatus(int sensorHz = 32): altitudeDeque(128, 0) {
     flightStage = ARMED;
+    currentAccel = 0;
+    hz = sensorHz;
 }
 
 double FlightStatus::median(std::vector<double> vec){
@@ -12,6 +14,13 @@ double FlightStatus::median(std::vector<double> vec){
     return (double)(vec[(size-1)/2] + vec[size/2])/2.0;
 }
 
+bool FlightStatus::checkLaunch() {
+    return false;
+}
+
+bool FlightStatus::checkCoast() {
+    return false;
+}
 
 bool FlightStatus::checkApogee() {
     std::vector<double> lm(altitudeDeque.cend() - 16, altitudeDeque.cend());
@@ -35,10 +44,12 @@ void FlightStatus::newTelemetry(double acceleration, double altitude) {
     altitudeDeque.pop_front();
     altitudeDeque.push_back(altitude);
 
-    if(acceleration > 11 && flightStage == ARMED) {
+    currentAccel = acceleration;
+
+    if(checkLaunch() && flightStage == ARMED) {
         flightStage = ASCENT;
     }
-    if(acceleration < 0 && flightStage == ASCENT) {
+    if(checkCoast() && flightStage == ASCENT) {
         flightStage = COAST;
     }
     if(checkApogee() && flightStage == COAST)
@@ -58,3 +69,4 @@ Stage FlightStatus::getStage() {
 }
 
 
+ 
