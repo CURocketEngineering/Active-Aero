@@ -35,7 +35,7 @@ void FlightStatus::newTelemetry(double acceleration, double altitude) {
     altitudeDeque.pop_front();
     altitudeDeque.push_back(altitude);
 
-    if(altitude > 30 && flightStage == ARMED) {
+    if(acceleration > 11 && flightStage == ARMED) {
         flightStage = ASCENT;
     }
     if(acceleration < 0 && flightStage == ASCENT) {
