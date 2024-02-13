@@ -95,6 +95,3 @@ void FlightStatus::newTelemetry(double acceleration, double altitude) {
 Stage FlightStatus::getStage() {
     return flightStage;
 }
-
-
- 
