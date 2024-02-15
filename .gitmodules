@@ -1,3 +1,0 @@
-[submodule "lib/Avionics"]
-	path = lib/Avionics
-	url = https://github.com/CURocketEngineering/avionics.git
