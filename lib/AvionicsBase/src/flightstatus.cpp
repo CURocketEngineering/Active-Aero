@@ -1,4 +1,4 @@
-#include "flightstatus.h"
+#include <flightstatus.h>
 
 FlightStatus::FlightStatus(int sensorHz = 32): altitudeDeque(128, 0), accelDeque(128,0) {
     // Why 128 to 0 when passing in?
@@ -67,12 +67,12 @@ bool FlightStatus::checkGround() {
     return lmMed < 20;
 }
 
-void FlightStatus::newTelemetry(double acceleration, double altitude) {
+void FlightStatus::newTelemetry(double accelCheck, double altCheck) {
     altitudeDeque.pop_front();
-    altitudeDeque.push_back(altitude);
+    altitudeDeque.push_back(altCheck);
 
     accelDeque.pop_front();
-    accelDeque.push_back(acceleration);
+    accelDeque.push_back(accelCheck);
 
     if(checkLaunch() && flightStage == ARMED) {
         flightStage = ASCENT;

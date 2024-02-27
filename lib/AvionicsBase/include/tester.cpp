@@ -1,5 +1,7 @@
+#include <flightstatus.h>
+
 void passAccel () {
-    float accelCheck[] = {9.8345,
+    double accelCheck[] = {9.8345,
 9.8345,
 9.83928,
 9.86321,
@@ -353,7 +355,7 @@ void passAccel () {
 }
 
 void passAlt () {
-    float altCheck[] = {2.49149,
+    double altCheck[] = {2.49149,
 3.16757,
 2.49149,
 2.49149,
@@ -704,4 +706,11 @@ void passAlt () {
 -12.2978,
 -16.9247,
 -20.8967};
+}
+
+void passDequeAccel () {
+    // for range of accelCheck
+    // send value to deque
+    // pause 1 ns
+
 }
