@@ -16,9 +16,9 @@ void Telemetry::setupSensors() {
     if (!sensorsActivated.mag) {
         sensorsActivated.mag = setupMag();
     }
-    if (!sensorsActivated.bmp) {
-        sensorsActivated.bmp = setupBmp();
-    }
+    // if (!sensorsActivated.bmp) {
+    //     sensorsActivated.bmp = setupBmp();
+    // }
 }
 
 bool Telemetry::setupImu() {
@@ -60,21 +60,21 @@ bool Telemetry::setupMag() {
     return true;
 }
 
-bool Telemetry::setupBmp() {
-    if (!bmp.begin_I2C()) {
-        Serial.println("Failed to find BMP390 chip");
-        return false;
-    }
+// bool Telemetry::setupBmp() {
+//     if (!bmp.begin_I2C()) {
+//         Serial.println("Failed to find BMP390 chip");
+//         return false;
+//     }
 
-    Serial.println("BMP390 Found!");
+//     Serial.println("BMP390 Found!");
 
-    bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
-    bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
-    bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
-    bmp.setOutputDataRate(BMP3_ODR_100_HZ);
+//     bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
+//     bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
+//     bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
+//     bmp.setOutputDataRate(BMP3_ODR_100_HZ);
 
-    return true;
-}
+//     return true;
+// }
 
 TelemetryData Telemetry::getTelemetry() {
     SensorDataMap data;
@@ -92,19 +92,19 @@ TelemetryData Telemetry::getTelemetry() {
 
     data["magnetometer"] = magnetometerData;
 
-    if (bmp.performReading()) {
-        SensorData temperatureData;
-        temperatureData.temperature = bmp.temperature;
-        data["temperature"] = temperatureData;
+    // if (bmp.performReading()) {
+    //     SensorData temperatureData;
+    //     temperatureData.temperature = bmp.temperature;
+    //     data["temperature"] = temperatureData;
 
-        SensorData pressureData;
-        pressureData.pressure = bmp.pressure;
-        data["pressure"] = pressureData;
+    //     SensorData pressureData;
+    //     pressureData.pressure = bmp.pressure;
+    //     data["pressure"] = pressureData;
 
-        SensorData altitudeData;
-        altitudeData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
-        data["altitude"] = altitudeData;
-    }
+    //     SensorData altitudeData;
+    //     altitudeData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+    //     data["altitude"] = altitudeData;
+    // }
 
     TelemetryData telemData;
     telemData.timestamp = millis();
