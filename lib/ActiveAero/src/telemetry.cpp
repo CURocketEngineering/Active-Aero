@@ -34,8 +34,22 @@ bool Telemetry::setupImu() {
 
     imu.setAccelDataRate(LSM6DS_RATE_104_HZ);
     imu.setGyroDataRate(LSM6DS_RATE_104_HZ);
+    // is there a way to change data rate as we near apogee?
+    // right after lift off
 
     return true;
+
+    // multiple calls to historical data points
+    // at least XX milliseconds old data
+    // call it repeatedly over time
+    // iteratively looks for the newest data point 
+    // until it finds something old enough
+    // CAROLINE 
+
+    // new method??-- pull total data from 100 ms to now
+    // use as array
+    // dont assume data is evenly spaced 
+    // 
 }
 
 bool Telemetry::setupMag() {
@@ -83,6 +97,7 @@ TelemetryData Telemetry::getTelemetry() {
     SensorData gyro;
     SensorData temp;
     imu.getEvent(&acceleration, &gyro, &temp);
+    // cleaner
     data["acceleration"] = acceleration;
     data["gyro"] = gyro;
 
