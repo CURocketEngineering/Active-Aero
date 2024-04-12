@@ -16,7 +16,8 @@ class ApogeePrediction {
     void calcVelocity(double acceleration);
   public:
     ApogeePrediction(double rocketMass, double dragCoefficent, double crossArea, double targetApogee);
-    double predictApogee(double* acceleration, double* orientation, double pressure, double temperature, double altitude);
+    double getVertAccel(double* acceleration, double* euler);
+    double predictApogee(double velocity, double pressure, double temperature, double altitude);
 };
 
 #endif
