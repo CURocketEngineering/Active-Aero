@@ -17,20 +17,23 @@ FlightStatus flightStatus;
 //KF2D::MeasurementVector measurement;
 TelemetryData telemData;
 
+int i;
+
 void setup()
 {
   delay(5000);
+  i=0;
   // put your setup code here, to run once:
   Serial.begin(115200);
   // while (!Serial) {}
   Serial.println("Starting up");
 
-  //sdLogger.setup();
+  sdLogger.setup();
 
   telemetry.setupSensors();
-  //sdLogger.writeLog("Setup complete");
-  // Serial.println(telemetry.getSensorConfig().c_str());
-  //sdLogger.writeLog(telemetry.getSensorConfig());
+  sdLogger.writeLog("Setup complete");
+  Serial.println(telemetry.getSensorConfig().c_str());
+  sdLogger.writeLog(telemetry.getSensorConfig());
 
   //ahrs.begin(115200); // sample frequency
   //ahrs.setRotationVector(0, 0, 0);
@@ -45,8 +48,12 @@ void setup()
 
 void loop()
 {
+  i++;
+  if(i<10000) {
+  Serial.println("Getting telemetry");}
   telemData = telemetry.getTelemetry();
-
+  if(i<10000) {
+  Serial.println("Got telemetry");}
   /*
   ahrs.update(telemData.sensorData["gyro"].gyro.x,
               telemData.sensorData["gyro"].gyro.y,
@@ -83,7 +90,13 @@ void loop()
   
   */
   //sdLogger.writeData(telemData, ahrsData, flightStatus.getStage());
-  flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["pressure"].pressure);
-  
-  sdLogger.writeData(telemData, flightStatus.getStage());
+  //Serial.println("Getting flight status");
+  //flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["pressure"].pressure);
+  if(i<10000){
+  Serial.println("Writing to SD");  }
+  sdLogger.writeData(telemData);
+  if(i<10000){
+  Serial.printf("Looping %d", i);}
+  if(i=10000){
+  sdLogger.readFile(SD, "/telemetry.csv");}
 }
