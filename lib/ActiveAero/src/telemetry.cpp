@@ -39,7 +39,7 @@ bool Telemetry::setupImu() {
 }
 
 bool Telemetry::setupMag() {
-    if (!mag.begin_I2C()) {
+    if (!mag.begin_I2C(0x1E)) { //alternate address 0x1E from 0x1C
         Serial.println("Failed to find LIS3MDL chip");
         return false;
     }
@@ -130,6 +130,10 @@ std::string Telemetry::getSensorConfig() {
                << "\n - Data Rate: " << mag.getDataRate()
                << "\n - Range: " << mag.getRange()
                << "\n - Interrupt Threshold: " << mag.getIntThreshold() << "\n";
+    }
+
+    if (sensorsActivated.bmp) {
+        config << "\nBMP Config:\n";
     }
 
     return config.str();
