@@ -3,6 +3,7 @@
 
 #include <Adafruit_LSM6DSOX.h>
 #include <Adafruit_LIS3MDL.h>
+#include <Adafruit_BMP3XX.h>
 #include <Adafruit_Sensor.h>
 #include <Arduino.h>
 
@@ -52,6 +53,8 @@ class Telemetry {
 
     Adafruit_LSM6DSOX imu;
     Adafruit_LIS3MDL mag;
+    Adafruit_BMP3XX bmp;
+
 
    public:
     Telemetry();
@@ -60,6 +63,7 @@ class Telemetry {
 
     bool setupMag();
     bool setupImu();
+    bool setupBmp();
 
     std::string getSensorConfig();
 

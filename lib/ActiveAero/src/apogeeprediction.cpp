@@ -56,3 +56,33 @@ double ApogeePrediction::predictApogee(double velocity, double pressure, double 
 
     return predApogee;
 }
+
+//mass of rocket - rocketMass (kg)
+//drag co - dragCoefficient ()
+//cross sectional area - crossArea (m^2)
+//air density --> pressure (Pa), temperature (C)
+// cV - m/s
+//A - m
+double ApogeePrediction::newPredictApogee(float currentVelocity, float altitude, float pressure, 
+float temperature, float dragCoefficient, float rocketMass, float crossArea){
+    //std::cout<<currentVelocity<<","<<altitude<<","<<pressure<<","<<temperature<<std::endl;
+    //
+    //DC: 0.68
+    //2.132kg for 1
+    //1.75kg for 2
+    //CSA: 0.00535205381m^2
+    //make these ^^ class values 
+    //double dragCoefficient = 0.68;
+    //double rocketMass = 1.75;
+    //double crossArea = 0.00535205381;
+
+    //green within 10
+    //yellow within 50
+    //red within 100
+
+
+    double rho = pressure*100/(287.058*(temperature+273.15)); // Get dry air density
+    double k = 0.5*rho*dragCoefficient*crossArea;
+    double predApogee = ((rocketMass/(2*k))*log((rocketMass*9.807 + k*pow(currentVelocity,2))/(rocketMass*9.807))+altitude); // Apogee prediction in meters
+    return predApogee;
+}

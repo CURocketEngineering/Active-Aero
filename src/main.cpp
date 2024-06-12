@@ -18,7 +18,7 @@ float dragCoefficent = 0.8;
 float crossArea = 0.02725801;
 float targetApogee = 1000; // This does nothing for now, you can ignore it
 
-ApogeePrediction apogeePrediction(rocketMass, dragCoefficent, crossArea, targetApogee);
+//ApogeePrediction apogeePrediction(rocketMass, dragCoefficent, crossArea, targetApogee);
 
 double baseAlt;
 KF2D::MeasurementVector measurement;
@@ -31,7 +31,6 @@ void setup()
   delay(5000);
   // put your setup code here, to run once:
   Serial.begin(115200);
-  // while (!Serial) {}
   Serial.println("Starting up");
 
   sdLogger.setup();
@@ -56,8 +55,22 @@ void setup()
 void loop()
 {
   telemData = telemetry.getTelemetry();
+  //Serial.println("Got telemetry data");
+  Serial.println("Telemetry data:");
+  for (auto const& sensor : telemData.sensorData)
+  {
+    Serial.print(sensor.first.c_str());
+    Serial.print(": ");
+    Serial.print(sensor.second.acceleration.x);
+    Serial.print(", ");
+    Serial.print(sensor.second.acceleration.y);
+    Serial.print(", ");
+    Serial.print(sensor.second.acceleration.z);
+    Serial.println();
+  }
+  Serial.println();
   
-  /*
+  
   ahrs.update(telemData.sensorData["gyro"].gyro.x,
               telemData.sensorData["gyro"].gyro.y,
               telemData.sensorData["gyro"].gyro.z,
@@ -70,10 +83,10 @@ void loop()
 
   float rx, ry, rz;
   ahrs.getRotationVector(&rx, &ry, &rz);
-  // Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz);
+  //Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz);
   float gx, gy, gz;
   ahrs.getGravityVector(&gx, &gy, &gz);
-  // Serial.printf("\tgx=%f \tgy=%f \tgz=%f", gx, gy, gz);
+  //Serial.printf("\tgx=%f \tgy=%f \tgz=%f", gx, gy, gz);
 
   AHRSMap ahrsData;
   ahrsData["rx"] = rx;
@@ -82,7 +95,7 @@ void loop()
   ahrsData["gx"] = gx;
   ahrsData["gy"] = gy;
   ahrsData["gz"] = gz;
-*/
+
 
   // Calculate the orientation using the gravity vector
   //double euler[3];
@@ -95,22 +108,21 @@ void loop()
   double accel[] = {telemData.sensorData["acceleration"].acceleration.x,
                     telemData.sensorData["acceleration"].acceleration.y,
                     telemData.sensorData["acceleration"].acceleration.z};
-  // double euler[] = {ahrsData["rx"], ahrsData["ry"], ahrsData["rz"]};
-  //double vAccel = apogeePrediction.getVertAccel(accel, euler);
-  double vAccel = telemData.sensorData["acceleration"].acceleration.z;
+  double euler[] = {ahrsData["rx"], ahrsData["ry"], ahrsData["rz"]};
+  double vAccel = ApogeePrediction::getVertAccel(accel, euler);
+  //double vAccel = telemData.sensorData["acceleration"].acceleration.z;
 
-  // Serial.printf("altitude = %f, \t y-acceleration = %f\t", measurement[0], measurement[1]);
   //The next 3 lines should be run on loop after launch is detected
   // measurement = {telemData.sensorData["altitude"].altitude, (float)(-9.81+telemData.sensorData["acceleration"].acceleration.z)}; //want y then ay- NOT g //eventually needs to move to AHRS vertical accel
   measurement = {telemData.sensorData["altitude"].altitude, (float)(-9.81+vAccel)};
+ //Serial.printf("altitude = %f, \t y-acceleration = %f\t", measurement[0], measurement[1]);
   //unsigned long nowTime = millis();
   //float dt = previousTime - nowTime;
   //previousTime = nowTime;
   //float dt = 0.25;
   KF.Update(measurement);
   KF.Predict();
-  Serial.println();
-  //Serial.printf("x_hat: \t%f m, \t%f m/s, \t%f m/s/s\n", KF.x_hat[0], KF.x_hat[1], KF.x_hat[2]);
+  //Serial.printf("x_hat: \t%f m, \t%f m/s, \t%f m/s/s", KF.x_hat[0], KF.x_hat[1], KF.x_hat[2]);
   
   KFData kfData = {
       acceleration: KF.x_hat[2],
@@ -122,7 +134,8 @@ void loop()
 
   // Apogee Prediction
   //REPLACE APPRED W SENSOR AY
-  double predApogee = apogeePrediction.predictApogee(KF.x_hat[1], telemData.sensorData["pressure"].pressure, telemData.sensorData["temperature"].temperature, telemData.sensorData["altitude"].altitude);
+  //double predApogee = apogeePrediction.predictApogee(KF.x_hat[1], telemData.sensorData["pressure"].pressure, telemData.sensorData["temperature"].temperature, telemData.sensorData["altitude"].altitude);
+  double predApogee = ApogeePrediction::newPredictApogee(KF.x_hat[1], telemData.sensorData["altitude"].altitude, telemData.sensorData["pressure"].pressure, telemData.sensorData["temperature"].temperature, dragCoefficent, rocketMass, crossArea);
   //Serial.println("Apogee Prediction: " + String(predApogee) + "m");
   //Serial.println("Getting flight status");
   flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["altitude"].altitude);
