@@ -40,11 +40,9 @@ void setup()
   Serial.println(telemetry.getSensorConfig().c_str());
   sdLogger.writeLog(telemetry.getSensorConfig());
 
-  //ahrs.begin(115200); // sample frequency
-  //ahrs.setRotationVector(0, 0, 0);
+  ahrs.begin(); // param: sampling frequency
   //the next 2 lines should be run when launch state is detected instead of at start
 
-  // HAD TO COMMMENT OUT CAUSE SPACE CONSTRAINTS
   measurement = {telemData.sensorData["altitude"].altitude, (-1)*telemData.sensorData["acceleration"].acceleration.z}; //want y then ay
   KF.InitializeKalmanFilter(measurement);
 
@@ -56,6 +54,7 @@ void loop()
 {
   telemData = telemetry.getTelemetry();
   //Serial.println("Got telemetry data");
+  /*
   Serial.println("Telemetry data:");
   for (auto const& sensor : telemData.sensorData)
   {
@@ -69,7 +68,13 @@ void loop()
     Serial.println();
   }
   Serial.println();
-  
+  */
+
+ // Fix orientation of LIS3MDL to LSM6DSOX
+ telemData.sensorData["magnetometer"].magnetic.x = telemData.sensorData["magnetometer"].magnetic.y * -1;
+  telemData.sensorData["magnetometer"].magnetic.y = telemData.sensorData["magnetometer"].magnetic.x;
+
+
   
   ahrs.update(telemData.sensorData["gyro"].gyro.x,
               telemData.sensorData["gyro"].gyro.y,
@@ -83,10 +88,11 @@ void loop()
 
   float rx, ry, rz;
   ahrs.getRotationVector(&rx, &ry, &rz);
-  //Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz);
+  //Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz); //still very rough, try to avoid using if at all possible
   float gx, gy, gz;
   ahrs.getGravityVector(&gx, &gy, &gz);
   //Serial.printf("\tgx=%f \tgy=%f \tgz=%f", gx, gy, gz);
+  Serial.println();
 
   AHRSMap ahrsData;
   ahrsData["rx"] = rx;
@@ -97,7 +103,7 @@ void loop()
   ahrsData["gz"] = gz;
 
 
-  // Calculate the orientation using the gravity vector
+   //Calculate the orientation using the gravity vector
   //double euler[3];
   //euler[0] = atan2(gy, gz);
   //euler[1] = atan2(-gx, sqrt(gy * gy + gz * gz));
@@ -105,17 +111,17 @@ void loop()
   
 
   // Vert Velocity Prediction
-  double accel[] = {telemData.sensorData["acceleration"].acceleration.x,
-                    telemData.sensorData["acceleration"].acceleration.y,
-                    telemData.sensorData["acceleration"].acceleration.z};
-  double euler[] = {ahrsData["rx"], ahrsData["ry"], ahrsData["rz"]};
-  double vAccel = ApogeePrediction::getVertAccel(accel, euler);
-  //double vAccel = telemData.sensorData["acceleration"].acceleration.z;
+  //double accel[] = {telemData.sensorData["acceleration"].acceleration.x,
+  //                  telemData.sensorData["acceleration"].acceleration.y,
+  //                  telemData.sensorData["acceleration"].acceleration.z};
+  //double euler[] = {ahrsData["rx"], ahrsData["ry"], ahrsData["rz"]};
+  //double vAccel = ApogeePrediction::getVertAccel(accel, euler);
+  double vAccel = telemData.sensorData["acceleration"].acceleration.z-9.81; // This "vAccel" value is only when the board is facing upwards, not at any other orientation
 
   //The next 3 lines should be run on loop after launch is detected
   // measurement = {telemData.sensorData["altitude"].altitude, (float)(-9.81+telemData.sensorData["acceleration"].acceleration.z)}; //want y then ay- NOT g //eventually needs to move to AHRS vertical accel
-  measurement = {telemData.sensorData["altitude"].altitude, (float)(-9.81+vAccel)};
- //Serial.printf("altitude = %f, \t y-acceleration = %f\t", measurement[0], measurement[1]);
+  measurement = {telemData.sensorData["altitude"].altitude, (float)(vAccel)};
+  //Serial.printf("altitude = %f, \t y-acceleration = %f\t", measurement[0], measurement[1]);
   //unsigned long nowTime = millis();
   //float dt = previousTime - nowTime;
   //previousTime = nowTime;
@@ -139,6 +145,7 @@ void loop()
   //Serial.println("Apogee Prediction: " + String(predApogee) + "m");
   //Serial.println("Getting flight status");
   flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["altitude"].altitude);
+  //Serial.printf("Flight Status: %s\n", flightStatus.getStageString().c_str());
   
   //Serial.println("VAccel: " + String(vAccel));
   sdLogger.writeData(telemData, kfData, vAccel, predApogee, flightStatus.getStageString());
