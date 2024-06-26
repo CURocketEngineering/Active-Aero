@@ -2,7 +2,8 @@
 
 Telemetry::Telemetry() {}
 
-void Telemetry::setupSensors() {
+void Telemetry::setupSensors()
+{
     // Serial.println("Initializing BNO and BMP");
     // while (!bmp.begin_I2C()) {}
     // Serial.println("BMP initialized");
@@ -10,19 +11,24 @@ void Telemetry::setupSensors() {
     // Serial.println("BNO initialized");
     // Serial.println("BNO and BMP initialized");
 
-    if (!sensorsActivated.imu) {
+    if (!sensorsActivated.imu)
+    {
         sensorsActivated.imu = setupImu();
     }
-    if (!sensorsActivated.mag) {
+    if (!sensorsActivated.mag)
+    {
         sensorsActivated.mag = setupMag();
     }
-    if (!sensorsActivated.bmp) {
+    if (!sensorsActivated.bmp)
+    {
         sensorsActivated.bmp = setupBmp();
     }
 }
 
-bool Telemetry::setupImu() {
-    if (!imu.begin_I2C()) {
+bool Telemetry::setupImu()
+{
+    if (!imu.begin_I2C())
+    {
         Serial.println("Failed to find LSM6DSOX chip");
         return false;
     }
@@ -38,10 +44,15 @@ bool Telemetry::setupImu() {
     return true;
 }
 
-bool Telemetry::setupMag() {
-    if (!mag.begin_I2C(0x1E)) { //alternate address 0x1E from 0x1C
-        Serial.println("Failed to find LIS3MDL chip");
-        return false;
+bool Telemetry::setupMag()
+{
+    if (!mag.begin_I2C(0x1C))
+    {
+        if (!mag.begin_I2C(0x1E)) // alternate address 0x1E from 0x1C that happens sometimes
+        {
+            Serial.println("Failed to find LIS3MDL chip");
+            return false;
+        }
     }
 
     Serial.println("LIS3MDL Found!");
@@ -52,16 +63,18 @@ bool Telemetry::setupMag() {
     mag.setRange(LIS3MDL_RANGE_4_GAUSS);
 
     mag.setIntThreshold(500);
-    mag.configInterrupt(false, false, true,  // enable z axis
-                        true,                // polarity
-                        false,               // don't latch
-                        true);               // enabled!
+    mag.configInterrupt(false, false, true, // enable z axis
+                        true,               // polarity
+                        false,              // don't latch
+                        true);              // enabled!
 
     return true;
 }
 
-bool Telemetry::setupBmp() {
-    if (!bmp.begin_I2C()) {
+bool Telemetry::setupBmp()
+{
+    if (!bmp.begin_I2C())
+    {
         Serial.println("Failed to find BMP390 chip");
         return false;
     }
@@ -73,7 +86,8 @@ bool Telemetry::setupBmp() {
     return true;
 }
 
-TelemetryData Telemetry::getTelemetry() {
+TelemetryData Telemetry::getTelemetry()
+{
     SensorDataMap data;
 
     SensorData acceleration;
@@ -83,13 +97,13 @@ TelemetryData Telemetry::getTelemetry() {
     data["acceleration"] = acceleration;
     data["gyro"] = gyro;
 
-
     SensorData magnetometerData;
     mag.getEvent(&magnetometerData);
 
     data["magnetometer"] = magnetometerData;
 
-    if (bmp.performReading()) {
+    if (bmp.performReading())
+    {
         SensorData temperatureData;
         temperatureData.temperature = bmp.temperature;
         data["temperature"] = temperatureData;
@@ -110,21 +124,24 @@ TelemetryData Telemetry::getTelemetry() {
     return telemData;
 }
 
-std::string Telemetry::getSensorConfig() {
+std::string Telemetry::getSensorConfig()
+{
     std::stringstream config;
 
     config << "Activated:\nImu: " << sensorsActivated.imu
            << "\nMag: " << sensorsActivated.mag
            << "\nBMP: " << sensorsActivated.bmp << "\n";
 
-    if (sensorsActivated.imu) {
+    if (sensorsActivated.imu)
+    {
         config << "\nIMU Config:\nAccel Range: " << imu.getAccelRange()
                << "\n - Gyro Range: " << imu.getGyroRange()
                << "\n - Accel Data Rate: " << imu.getAccelDataRate()
                << "\n - Gyro Data Rate: " << imu.getGyroDataRate() << "\n";
     }
 
-    if (sensorsActivated.mag) {
+    if (sensorsActivated.mag)
+    {
         config << "\nMag Config:\nPerformance Mode: " << mag.getPerformanceMode()
                << "\n - Operation Mode: " << mag.getOperationMode()
                << "\n - Data Rate: " << mag.getDataRate()
@@ -132,7 +149,8 @@ std::string Telemetry::getSensorConfig() {
                << "\n - Interrupt Threshold: " << mag.getIntThreshold() << "\n";
     }
 
-    if (sensorsActivated.bmp) {
+    if (sensorsActivated.bmp)
+    {
         config << "\nBMP Config:\n";
     }
 

@@ -68,6 +68,8 @@ class Telemetry {
     std::string getSensorConfig();
 
     TelemetryData getTelemetry();
+
+    SensorsActivated getSensorsActivated() { return sensorsActivated; }
 };
 
 #endif
