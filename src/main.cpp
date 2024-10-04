@@ -17,9 +17,9 @@ AHRS ahrs;
 KF2D KF;
 ServoInterface ms24;
 
-float rocketMass = 17.23;
-float dragCoefficent = 0.8;
-float crossArea = 0.02725801;
+float rocketMass = 17.23; // need to calculate wet and dry mass of rocket, make two vars
+float dragCoefficent = 0.8; // need to calculate drag coefficient of rocket without flaps
+float crossArea = 0.02725801; // need to calculate crossarea of rocket without flaps, as well as a new var with flaps extended
 float targetApogee = 1000; // This does nothing for now, you can ignore it
 
 // ApogeePrediction apogeePrediction(rocketMass, dragCoefficent, crossArea, targetApogee);
