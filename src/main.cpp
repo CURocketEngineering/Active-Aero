@@ -21,6 +21,7 @@ float rocketMass = 17.23; // need to calculate wet and dry mass of rocket, make 
 float dragCoefficent = 0.8; // need to calculate drag coefficient of rocket without flaps
 float crossArea = 0.02725801; // need to calculate crossarea of rocket without flaps, as well as a new var with flaps extended
 float targetApogee = 1000; // This does nothing for now, you can ignore it
+float servoAngle = 180; // desired angle for test flight
 
 // ApogeePrediction apogeePrediction(rocketMass, dragCoefficent, crossArea, targetApogee);
 
@@ -32,7 +33,7 @@ unsigned long previousTime;
 
 void setup()
 {
-  delay(5000);
+  delay(15000);
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println("Starting up");
@@ -85,6 +86,7 @@ void loop()
   }
   Serial.println();
   */
+
 
   // Fix orientation of LIS3MDL to LSM6DSOX
   telemData.sensorData["magnetometer"].magnetic.x = telemData.sensorData["magnetometer"].magnetic.y * -1;
@@ -157,9 +159,22 @@ void loop()
   Serial.println("Getting flight status");
   flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["altitude"].altitude);
   Serial.printf("Flight Status: %s\n", flightStatus.getStageString().c_str());
+  
+  if (flightStatus.getStage() == ASCENT)
+  {
+    ms24.setAngle(servoAngle);
+  }
+  else if (flightStatus.getStage() == ARMED)
+  {
+    servoAngle = 0;
+    ms24.setAngle(servoAngle);
+  }
+
+  //Serial.printf("servo-angle = %f \t", servoAngle);
+
 
   // Serial.println("VAccel: " + String(vAccel));
-  sdLogger.writeData(telemData, kfData, vAccel, predApogee, flightStatus.getStageString());
+  sdLogger.writeData(telemData, kfData, vAccel, predApogee, flightStatus.getStageString(), servoAngle);
 
   
 }
