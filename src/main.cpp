@@ -21,7 +21,7 @@ float rocketMass = 17.23; // need to calculate wet and dry mass of rocket, make 
 float dragCoefficent = 0.8; // need to calculate drag coefficient of rocket without flaps
 float crossArea = 0.02725801; // need to calculate crossarea of rocket without flaps, as well as a new var with flaps extended
 float targetApogee = 1000; // This does nothing for now, you can ignore it
-float servoAngle = 180; // desired angle for test flight
+float servoAngle; // servo angle global
 
 // ApogeePrediction apogeePrediction(rocketMass, dragCoefficent, crossArea, targetApogee);
 
@@ -160,13 +160,18 @@ void loop()
   flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["altitude"].altitude);
   Serial.printf("Flight Status: %s\n", flightStatus.getStageString().c_str());
   
-  if (flightStatus.getStage() == ASCENT)
-  {
-    ms24.setAngle(servoAngle);
-  }
-  else if (flightStatus.getStage() == ARMED)
+  if (flightStatus.getStage() == ARMED
+      || flightStatus.getStage() == ASCENT
+      || flightStatus.getStage() == APOGEE
+      || flightStatus.getStage() == DESCENT
+      || flightStatus.getStage() == ONGROUND)
   {
     servoAngle = 0;
+    ms24.setAngle(servoAngle);
+  }
+  else if (flightStatus.getStage() == COAST)
+  {
+    servoAngle = 180;
     ms24.setAngle(servoAngle);
   }
 
