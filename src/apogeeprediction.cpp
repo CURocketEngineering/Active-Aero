@@ -1,7 +1,9 @@
-#include <Arduino.h>
+//#include <Arduino.h>
 
 #include "apogeeprediction.h"
 #include "math.h"
+
+#include <iostream>
 
 ApogeePrediction::ApogeePrediction(double rocketMass, double dragCoefficent, double crossArea, double targetApogee) : rocketMass(rocketMass), dragCoefficent(dragCoefficent), crossArea(crossArea), targetApogee(targetApogee) {
     currentVelocity = 0;
@@ -92,26 +94,36 @@ double ApogeePrediction::predictApogeeWithFlaps
     (float currentVelocity, float altitude, float pressure, float temperature, 
      float dragCoefficient, float rocketMass, float crossArea, float flapArea) 
 {
+    //m^2
+    double newCrossArea = crossArea + flapArea;
+    printf("New cross area %f\n", newCrossArea);
+
     //flap area needs to be in m^2
     //Dry air density
+    printf("pres %f, temp %f\n", pressure, temperature);
     double rho = pressure * 100 / (287.058 * (temperature + 273.15));
+    printf("rho %f\n", rho);
 
     //new
     //(q) [Pa] calculated with dry air density
     double dynamicPressure = 0.5 * rho * pow(currentVelocity, 2); 
+    printf("dyanmic pressure %f\n", dynamicPressure);
 
     //(F_4) [N]
-    double forceOnFlaps = dynamicPressure * flapArea;
+    double forceOnRocket = dynamicPressure * newCrossArea; //here
+    printf("force on rocket %f\n", forceOnRocket);
 
-    double newDragCoefficient = dragCoefficient + (2 * forceOnFlaps) / (rho * pow(currentVelocity, 2) * flapArea);
-    
-    //m^2
-    double newCrossArea = crossArea + flapArea;
 
+    double newDragCoefficient = dragCoefficient + (2 * forceOnRocket) / (rho * pow(currentVelocity, 2) * newCrossArea);
+    printf("new drag c %f\n", newDragCoefficient);
+    printf("...Check this brutha %f\n", (2 * forceOnRocket) / (rho * pow(currentVelocity, 2) * newCrossArea));
 
     double k = 0.5 * rho * newDragCoefficient * newCrossArea;
+    printf("k %f\n", k);
     //apogee prediction in meters
     double predApogee = ((rocketMass/(2*k))*log((rocketMass*9.807 + k*pow(currentVelocity,2))/(rocketMass*9.807))+altitude);
+    printf("pred apogee %f\n\n", predApogee);
+    return predApogee;
 }
 
 // trueRocketAltitude = localElevation + rocketAltitude

@@ -20,6 +20,9 @@ class ApogeePrediction {
     double predictApogee(double velocity, double pressure, double temperature, double altitude);
     static double newPredictApogee(float currentVelocity, float altitude, float pressure, 
 float temperature, float dragCoefficient, float rocketMass, float crossArea);
+    
+    static double predictApogeeWithFlaps(float currentVelocity, float altitude, float pressure, float temperature, 
+      float dragCoefficient, float rocketMass, float crossArea, float flapArea);
 };
 
 #endif
