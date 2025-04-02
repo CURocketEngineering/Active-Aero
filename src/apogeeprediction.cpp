@@ -96,70 +96,24 @@ double ApogeePrediction::predictApogeeWithFlaps
 {
     //m^2
     double newCrossArea = crossArea + flapArea;
-    printf("New cross area %f\n", newCrossArea);
 
-    //flap area needs to be in m^2
     //Dry air density
-    printf("pres %f, temp %f\n", pressure, temperature);
+    //[kg/m^3]
     double rho = pressure * 100 / (287.058 * (temperature + 273.15));
-    printf("rho %f\n", rho);
 
-    //new
-    //(q) [Pa] calculated with dry air density
-    double dynamicPressure = 0.5 * rho * pow(currentVelocity, 2); 
-    printf("dyanmic pressure %f\n", dynamicPressure);
-
-    //(F_4) [N]
-    double forceOnRocket = dynamicPressure * newCrossArea; //here
-    printf("force on rocket %f\n", forceOnRocket);
-
-
-    double newDragCoefficient = dragCoefficient + (2 * forceOnRocket) / (rho * pow(currentVelocity, 2) * newCrossArea);
-    printf("new drag c %f\n", newDragCoefficient);
-    printf("...Check this brutha %f\n", (2 * forceOnRocket) / (rho * pow(currentVelocity, 2) * newCrossArea));
-
+    double newDragCoefficient = (crossArea * 0.8 + flapArea * 1.2) / newCrossArea;
+    
     double k = 0.5 * rho * newDragCoefficient * newCrossArea;
-    printf("k %f\n", k);
+    
     //apogee prediction in meters
     double predApogee = ((rocketMass/(2*k))*log((rocketMass*9.807 + k*pow(currentVelocity,2))/(rocketMass*9.807))+altitude);
-    printf("pred apogee %f\n\n", predApogee);
     return predApogee;
 }
-
-// trueRocketAltitude = localElevation + rocketAltitude
-
-// temperatureAtRocket = groundAirTemperature - (dryAirTemperatureLapseRate * trueRocketAltitude)
-
-// dryAirDensity = airDensityAtSeaLevel * ((((temperatureAtRocket / standardAirTemperatureAtSeaLevel)) ^ (((gravity * molarMassDryAir)/(specificGasConstantForWaterVapor * dryAirTemperatureLapseRate)) - 1)))
-
-// //saturationVaporPressure = 0.61078 * EXP((17.27 * (temperatureAtRocket - 273.15)) / ((temperatureAtRocket - 273.15) + 237.3)) * 1000
-
-// //partialPressureOfWaterVapor = saturationVaporPressure * relativeAirHumidity * 0.01
-
-// //currentAtmosphericPressure = seaLevelAtmosphericPressure * (1 - ((dryAirTemperatureLapseRate * trueRocketAltitude) / standardAirTemperatureAtSeaLevel)) ^ ((gravity * molarMassOfDryAir) / (specificGasConstantForDryAir * dryAirTemperatureLapseRate))
-
-// //humidAirDensity = dryAirDensity * (1 - (partialPressureOfWaterVapor / currentAtmosphericPressure) * (1 - (molarMassOfWaterVapor / molarMassOfDryAir)))
-
-// //dynamicPressure = (0.5 * humidAirDensity * (rocketVelocity ^ 2)) // / 6895
-
-// dynamicPressure = 0.5 dryAirDensity * (rocketVelocity ^ 2)
-
-// forceOnFourFlaps = dynamicPressure * 4 * oneFlapArea
-
-// newDragCoefficient = dragCoefficient + (2 * forceOnFourFlaps) / (humidAirDensity * (rocketVelocity ** 2) * (4 * oneFlapArea))
-
-// newCrossArea = crossArea + (4 * oneFlapArea)
-
 //90 degrees
 //options for servo angle
-//7 [0, 15, 30, 45, 60, 75, 90]
-//6 [0, 18, 36, 54, 72, 90]
 //4 [0, 30, 60, 90]
 
 //flap area
 //0 = no deployment
 //90 = max deployment area
 //hard code flap areas to remove calculations
-
-//only calculate dryAirDensity to remove calculations?
-//decide which servo angles to predict apogee with first

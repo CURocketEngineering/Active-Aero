@@ -91,7 +91,6 @@ void KF2D::Predict()
 {
      // Predict the state using the state transition matrix A and the previous state estimate x_hat
      x_hat = mul(A, x_hat) + (B * uk); //+wk implementation for manual adjustments?
-
      // Update the error covariance matrix P using the process noise covariance Q
      P = mul(mul(A, P), transpose(A)) + Q;
 }
@@ -117,7 +116,7 @@ void KF2D::Update(const MeasurementVector &measurement)
 
      // Calculate the Kalman gain
      mat<float, 3, 2> K = mul(mul(P, transpose(H)), inverse(mul(mul(H, P), transpose(H)) + R)); // n,m
-
+     
      // Update the state estimate based on the measurement and Kalman gain
      x_hat = x_hat + mul(K, (measurement - mul(H, x_hat)));
 
