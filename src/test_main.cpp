@@ -23,7 +23,6 @@ float crossArea = 0.02725801; // need to calculate crossarea of rocket without f
 
 
 float servoAngle; // servo angle global
-float predictedApogee = 550;
 bool coast = false;
 unsigned long startCoastTime;
 double previousPredictedApogee;
@@ -32,7 +31,7 @@ double totalFlapArea = 0.015;
 int angles[] = {0, 30, 60, 90};
 int numAngles = 4;
 double areas[] = {0, 1.0/3.0 * totalFlapArea, 2.0/3.0 * totalFlapArea, totalFlapArea};
-double desiredApogee = 581.22;
+double desiredApogee = 577;
 double predApogee;
 
 float prevAltitude = 0;
@@ -49,6 +48,15 @@ double t1 = 0;
 int main() {
     measurement = {1.8154, 10.1503}; //want y then ay
     KF.InitializeKalmanFilter(measurement);
+
+    std::ofstream csvFile("predicted_apogee.csv", std::ios::out | std::ios::trunc);
+    if (!csvFile.is_open()) {
+        std::cerr << "Error opening CSV file!" << std::endl;
+        return 1;
+    }
+
+    // Write the header for the CSV file
+    csvFile << "PreviousPredictedApogee" << std::endl;
 
 
     std::ifstream file("AA2022_train_1.csv"); // Change to your file's actual name
@@ -160,6 +168,10 @@ int main() {
                 for (int i = 0; i < numAngles; ++i) {
                     previousPredictedApogee = ApogeePrediction::predictApogeeWithFlaps(velocity, altitude, pressure, temp, dragCoefficent, rocketMass, crossArea, areas[i]);
                     printf("Predicted Apogee: %f\n", previousPredictedApogee);
+
+                    //printf("%f %f %f %f %f\n", t4, t3, t2, t1, previousPredictedApogee);
+                    //if (t4 > 0) {previousPredictedApogee = (t4 + t3 + t2 + t1 + previousPredictedApogee) / 5;}
+
                     if (previousPredictedApogee >= desiredApogee + (0.1 * desiredApogee)
                         && previousPredictedApogee - desiredApogee + (0.1 * desiredApogee) <= minDistance) 
                     {
@@ -170,6 +182,7 @@ int main() {
                 }
                 printf("\n");
                 printf("%i\t%f\n\n", angles[setting], previousPredictedApogee);
+                csvFile << previousPredictedApogee << std::endl;
             }
             else if (altitude < desiredApogee - (0.05 * desiredApogee)) {
                 printf("Level 2: aim for %f\n", desiredApogee + (0.05 * desiredApogee));
@@ -178,6 +191,10 @@ int main() {
                 for (int i = 0; i < numAngles; ++i) {
                     previousPredictedApogee = ApogeePrediction::predictApogeeWithFlaps(velocity, altitude, pressure, temp, dragCoefficent, rocketMass, crossArea, areas[i]);
                     printf("Predicted Apogee: %f\n", previousPredictedApogee);
+
+                    //printf("%f %f %f %f %f\n", t4, t3, t2, t1, previousPredictedApogee);
+                    //if (t4 > 0) {previousPredictedApogee = (t4 + t3 + t2 + t1 + previousPredictedApogee) / 5;}
+
 
                     if (previousPredictedApogee >= desiredApogee + (0.05 * desiredApogee)
                         && previousPredictedApogee - desiredApogee + (0.05 * desiredApogee) <= minDistance) 
@@ -189,6 +206,7 @@ int main() {
                 }
                 printf("\n");
                 printf("%i\t%f\n\n", angles[setting], previousPredictedApogee);
+                csvFile << previousPredictedApogee << std::endl;
             }
             else if (altitude < desiredApogee) {
                 printf("Level 3 (Precision): aim for %f\n", desiredApogee);
@@ -198,8 +216,8 @@ int main() {
                     previousPredictedApogee = ApogeePrediction::predictApogeeWithFlaps(velocity, altitude, pressure, temp, dragCoefficent, rocketMass, crossArea, areas[i]);
                     printf("Predicted Apogee: %f\n", previousPredictedApogee);
 
-                    printf("%f %f %f %f %f\n", t4, t3, t2, t1, previousPredictedApogee);
-                    if (t4 > 0) {previousPredictedApogee = (t4 + t3 + t2 + t1 + previousPredictedApogee) / 5;}
+                    //printf("%f %f %f %f %f\n", t4, t3, t2, t1, previousPredictedApogee);
+                    //if (t4 > 0) {previousPredictedApogee = (t4 + t3 + t2 + t1 + previousPredictedApogee) / 5;}
 
                     if (previousPredictedApogee >= desiredApogee
                         && previousPredictedApogee - desiredApogee <= minDistance) 
@@ -212,14 +230,16 @@ int main() {
                 }
                 printf("\n");
                 printf("%i\t%f\n\n", angles[setting], previousPredictedApogee);
+                csvFile << previousPredictedApogee << std::endl;
             }
-            t4 = t3;
-            t3 = t2;
-            t2 = t1;
-            t1 = previousPredictedApogee;
-            printf("%f %f %f %f\n\n", t4, t3, t2, t1);
+            //t4 = t3;
+            //t3 = t2;
+            //t2 = t1;
+            //t1 = previousPredictedApogee;
+            //printf("%f %f %f %f\n\n", t4, t3, t2, t1);
         }
     }
     file.close();
+    csvFile.close();
     return 0;
 }
