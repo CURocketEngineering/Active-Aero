@@ -37,7 +37,7 @@ void setup()
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println("Starting up");
-  ms24.setup(38, 270, 500, 2500);
+  ms24.setup(6, 270, 500, 2500);
   ms24.setPercentAngle(50);
   delay(1000);
 
