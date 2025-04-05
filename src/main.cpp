@@ -2,17 +2,20 @@
 
 #include "telemetry.h"
 #include "apogeeprediction.h"
-#include "flightstatus.h"
 #include "sdlogger.h"
 #include "ahrs.h"
 #include "kf-2d.h"
 #include "servointerface.h"
+#include "..\lib\Avionics\include\state_estimation\BurnoutStateMachine.h" 
+#include "..\lib\Avionics\include\data_handling\DataPoint.h"
+
+BurnoutStateMachine sm;
+DataPoint aclX, aclY, aclZ, alt;
 
 void communicateVerification(); // Function prototype
 
 SDLogger sdLogger;
 Telemetry telemetry;
-FlightStatus flightStatus(16);
 AHRS ahrs;
 KF2D KF;
 ServoInterface ms24;
@@ -38,19 +41,18 @@ void setup()
   Serial.begin(115200);
   Serial.println("Starting up");
   ms24.setup(38, 270, 500, 2500);
-  ms24.setPercentAngle(50);
   delay(1000);
 
-  sdLogger.setup();
+  // sdLogger.setup();
 
   telemetry.setupSensors();
   
-  communicateVerification();
+  // communicateVerification();
   
   
-  sdLogger.writeLog("Setup complete");
+  // sdLogger.writeLog("Setup complete");
   Serial.println(telemetry.getSensorConfig().c_str());
-   sdLogger.writeLog(telemetry.getSensorConfig());
+  //  sdLogger.writeLog(telemetry.getSensorConfig());
 
   ahrs.begin(); // param: sampling frequency
   // the next 2 lines should be run when launch state is detected instead of at start
@@ -127,6 +129,14 @@ void loop()
   double accel[] = {telemData.sensorData["acceleration"].acceleration.x,
                     telemData.sensorData["acceleration"].acceleration.y,
                     telemData.sensorData["acceleration"].acceleration.z};
+
+  // send data to state machine
+  aclX.data = accel[0];
+  aclY.data = accel[1];
+  aclZ.data = accel[2];
+  alt.data = telemData.sensorData["altitude"].altitude;
+  sm.update(aclX, aclY, aclZ, alt);
+  
   //double euler[] = {ahrsData["rx"], ahrsData["ry"], ahrsData["rz"]};
   double vAccel = ApogeePrediction::getVertAccel(accel, euler);
   // double vAccel = telemData.sensorData["acceleration"].acceleration.z-9.81; // This "vAccel" value is only when the board is facing upwards, not at any other orientation
@@ -157,21 +167,21 @@ void loop()
   double predApogee = ApogeePrediction::newPredictApogee(KF.x_hat[1], telemData.sensorData["altitude"].altitude, telemData.sensorData["pressure"].pressure, telemData.sensorData["temperature"].temperature, dragCoefficent, rocketMass, crossArea);
   Serial.println("Apogee Prediction: " + String(predApogee) + "m");
   Serial.println("Getting flight status");
-  flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["altitude"].altitude);
-  Serial.printf("Flight Status: %s\n", flightStatus.getStageString().c_str());
+  // flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["altitude"].altitude);
+  // Serial.printf("Flight Status: %s\n", sm.getState().c_str());
   
-  if (flightStatus.getStage() == ARMED
-      || flightStatus.getStage() == ASCENT
-      || flightStatus.getStage() == APOGEE
-      || flightStatus.getStage() == DESCENT
-      || flightStatus.getStage() == ONGROUND)
+  if (sm.getState() == STATE_ARMED
+      || sm.getState() == STATE_ASCENT
+      || sm.getState() == STATE_DESCENT
+      || sm.getState() == STATE_LANDED)
   {
     servoAngle = 0;
     ms24.setAngle(servoAngle);
   }
-  else if (flightStatus.getStage() == COAST)
+  else if (sm.getState() == STATE_COAST_ASCENT)
   {
-    servoAngle = 180;
+    /* replace with kf logic */
+    servoAngle = 110;
     ms24.setAngle(servoAngle);
   }
 
@@ -179,7 +189,7 @@ void loop()
 
 
   // Serial.println("VAccel: " + String(vAccel));
-  sdLogger.writeData(telemData, kfData, vAccel, predApogee, flightStatus.getStageString(), servoAngle);
+  // sdLogger.writeData(telemData, kfData, vAccel, predApogee, flightStatus.getStageString(), servoAngle);
 
   
 }
