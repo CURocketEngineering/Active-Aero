@@ -9,7 +9,14 @@
 #include "..\lib\Avionics\include\state_estimation\BurnoutStateMachine.h" 
 #include "..\lib\Avionics\include\data_handling\DataPoint.h"
 
-BurnoutStateMachine sm;
+#define TARGET_APOGEE 10000
+
+IDataSaver* dataSaver;
+VerticalVelocityEstimator* verticalVelocityEstimator;
+LaunchPredictor *lp;
+ApogeeDetector *ad;
+
+BurnoutStateMachine sm(dataSaver, lp, ad, verticalVelocityEstimator);
 DataPoint aclX, aclY, aclZ, alt;
 
 void communicateVerification(); // Function prototype
@@ -26,10 +33,8 @@ float crossArea = 0.02725801; // need to calculate crossarea of rocket without f
 float targetApogee = 1000; // This does nothing for now, you can ignore it
 float servoAngle; // servo angle global
 
-// ApogeePrediction apogeePrediction(rocketMass, dragCoefficent, crossArea, targetApogee);
-
 double baseAlt;
-KF2D::MeasurementVector measurement;
+BurnoutStateMachine::MeasurementVector measurement;
 TelemetryData telemData;
 
 unsigned long previousTime;
@@ -70,6 +75,7 @@ void setup()
 
 void loop()
 {
+  // if apogee detector detects apogee, bring fins back in (?) or use kf prediction logic <- will be faster
 
   telemData = telemetry.getTelemetry();
   //Serial.println("Got telemetry data");
@@ -135,15 +141,18 @@ void loop()
   aclY.data = accel[1];
   aclZ.data = accel[2];
   alt.data = telemData.sensorData["altitude"].altitude;
+
+  aclX.timestamp_ms = aclY.timestamp_ms = aclZ.timestamp_ms = alt.timestamp_ms = millis(); // record timestamp for data points
+
+  // update state we're in, update vve
   sm.update(aclX, aclY, aclZ, alt);
+  sm.verticalVelocityEstimator->update(aclX, aclY, aclZ, alt);
   
   //double euler[] = {ahrsData["rx"], ahrsData["ry"], ahrsData["rz"]};
-  double vAccel = ApogeePrediction::getVertAccel(accel, euler);
-  // double vAccel = telemData.sensorData["acceleration"].acceleration.z-9.81; // This "vAccel" value is only when the board is facing upwards, not at any other orientation
+  float vAccel = sm.verticalVelocityEstimator->getInertialVerticalAcceleration(); // board has to be facing upwards
 
   // The next 3 lines should be run on loop after launch is detected
-  // // measurement = {telemData.sensorData["altitude"].altitude, (float)(-9.81+telemData.sensorData["acceleration"].acceleration.z)}; //want y then ay- NOT g //eventually needs to move to AHRS vertical accel
-  measurement = {telemData.sensorData["altitude"].altitude, (float)(vAccel)};
+  measurement = {telemData.sensorData["altitude"].altitude, vAccel};
   Serial.printf("altitude = %f, \t y-acceleration = %f\t", measurement[0], measurement[1]);
   unsigned long nowTime = millis();
   float dt = previousTime - nowTime;
@@ -151,11 +160,11 @@ void loop()
   // // float dt = 0.25;
   KF.Update(measurement);
   KF.Predict();
-  Serial.printf("x_hat: \t%f m, \t%f m/s, \t%f m/s/s", KF.x_hat[0], KF.x_hat[1], KF.x_hat[2]);
+  Serial.printf("x_hat: \t%f m, \t%f m/s, \t%f m/s/s", KF.x_hat[0], sm.verticalVelocityEstimator->getEstimatedVelocity(), sm.verticialVelocityEstimator->getInertialVerticalAcceleration());
 
   KFData kfData = {
-      acceleration: KF.x_hat[2],
-      velocity: KF.x_hat[1],
+      acceleration: sm.verticalVelocityEstimator->getInertialVerticalAcceleration(),
+      velocity: sm.verticialVelocityEstimator->getEstimatedVelocity(),
       drift: KF.x_hat[0]
   };
 
@@ -163,34 +172,30 @@ void loop()
 
   // Apogee Prediction
   // REPLACE APPRED W SENSOR AY
-  // double predApogee = apogeePrediction.predictApogee(KF.x_hat[1], telemData.sensorData["pressure"].pressure, telemData.sensorData["temperature"].temperature, telemData.sensorData["altitude"].altitude);
-  double predApogee = ApogeePrediction::newPredictApogee(KF.x_hat[1], telemData.sensorData["altitude"].altitude, telemData.sensorData["pressure"].pressure, telemData.sensorData["temperature"].temperature, dragCoefficent, rocketMass, crossArea);
+  double predApogee = ApogeePrediction::newPredictApogee(sm.verticalVelocityEstimator->getEstimatedVelocity(), telemData.sensorData["altitude"].altitude, telemData.sensorData["pressure"].pressure, telemData.sensorData["temperature"].temperature, dragCoefficent, rocketMass, crossArea);
   Serial.println("Apogee Prediction: " + String(predApogee) + "m");
   Serial.println("Getting flight status");
-  // flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["altitude"].altitude);
-  // Serial.printf("Flight Status: %s\n", sm.getState().c_str());
   
-  if (sm.getState() == STATE_ARMED
-      || sm.getState() == STATE_ASCENT
-      || sm.getState() == STATE_DESCENT
-      || sm.getState() == STATE_LANDED)
+  // Deployment logic for fins - stay 0 so we don't break them
+  if (sm.getState() == STATE_ARMED || sm.getState() == STATE_POWERED_ASCENT || sm.getState() == STATE_DESCENT)
   {
     servoAngle = 0;
     ms24.setAngle(servoAngle);
   }
+  // we actually want to deploy
   else if (sm.getState() == STATE_COAST_ASCENT)
   {
-    /* replace with kf logic */
-    servoAngle = 110;
-    ms24.setAngle(servoAngle);
+    if(predApogee > TARGET_APOGEE)
+    {
+      servoAngle = 110; /* create function to deploy at an angle based on drag coefficient, for now use 110 */
+      ms24.setAngle(servoAngle);
+    }
+    else
+    {
+      servoAngle = 0;
+      ms24.setAngle(servoAngle);
+    }
   }
-
-  //Serial.printf("servo-angle = %f \t", servoAngle);
-
-
-  // Serial.println("VAccel: " + String(vAccel));
-  // sdLogger.writeData(telemData, kfData, vAccel, predApogee, flightStatus.getStageString(), servoAngle);
-
   
 }
 
