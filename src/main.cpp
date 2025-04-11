@@ -11,6 +11,7 @@
 // servo + important board communication vars
 #define BAUD_RATE 115200
 #define SETUP_DELAY 15000 // millisec
+#define COMMUNICATION_VERIFICATION_DELAY 2000 // millisec
 #define SERVO_LOWER_PULSE 500
 #define SERVO_UPPER_PULSE 2500
 #define SERVO_RANGE 270
@@ -32,6 +33,7 @@
 // fin deployment logic variables
 #define FIN_RETRACTION_THRESHOLD_S 3.0f
 #define MAX_DEPLOYMENT_ANGLE 110.0f
+#define HALFWAY_DEPLOYED 55.0f
 #define MIN_DEPLOYMENT_ANGLE 0.0f
 
 // currently cruft, but this could be very useful if we upgrade our math
@@ -57,6 +59,7 @@ TelemetryData telemData;
 float servoAngle; // servo angle global
 double baseAlt;
 unsigned long previousTime;
+bool sd_init = false;
 
 void setup()
 {
@@ -80,7 +83,8 @@ void setup()
     ap = new ApogeePredictor(*verticalVelocityEstimator, EMA_ALPHA, MINIMUM_CLIMB_VELOCITY);
 
     // confirm initialization 
-    if(dataSaver) { Serial.println("Data saver initialized"); } else { Serial.println("Data saver not initialized"); }
+    sd_init = false;
+    if(dataSaver) { Serial.println("Data saver initialized"); sd_init = true; } else { Serial.println("Data saver not initialized"); sd_init = false; }
     if(verticalVelocityEstimator) { Serial.println("Vertical velocity estimator initialized"); } else { Serial.println("Vertical velocity estimator not initialized"); }
     if(ad) { Serial.println("Apogee detector initialized"); } else { Serial.println("Apogee detector not initialized"); }
     if(lp) { Serial.println("Launch predictor initialized"); } else { Serial.println("Launch predictor not initialized"); }
@@ -96,7 +100,7 @@ void setup()
     previousTime = millis();
 
     Serial.println("Entering communication verification...");
-    // communicateVerification();
+    communicateVerification(sd_init);
 }
 
 
@@ -189,33 +193,31 @@ void loop()
 }
 
 
-void communicateVerification(/* consider adding a var to be passed from pointer setup - if they don't, we don't verify */)
+void communicateVerification(bool sd_init)
 {
-    // ms24.setPercentAngle(50);
-    // delay(2000);
+    ms24.setPercentAngle(HALFWAY_DEPLOYED); // different from full deploy to visually confirm we're undergoing comms verification
+    delay(COMMUNICATION_VERIFICATION_DELAY);
     SensorsActivated sensorsActivated = telemetry.getSensorsActivated();
-    //   bool sdActivated = sdLogger.isInitialized();
-    // check the big sd
-    // std::vector<bool> verifiables = {sensorsActivated.mag, sensorsActivated.bmp, sensorsActivated.imu, sdActivated}; // big sd
+    std::vector<bool> verifiables = {sensorsActivated.mag, sensorsActivated.bmp, sensorsActivated.imu, sd_init}; 
     bool flag = false;
-    // for (bool verifiable : verifiables)
-    // {
-    //     if (verifiable)
-    //     {
-    //     ms24.setPercentAngle(0); // in is good if everything is working
-    //     delay(2000);
-    //     }
-    //     else
-    //     {
-    //     ms24.setPercentAngle(100); // out is bad if something goes wrong
-    //     delay(2000);
-    //     flag = true;
-    //     }
-    //     ms24.setPercentAngle(50);
-    //     delay(2000);
-    // }
-    // ms24.setPercentAngle(100 * flag);
-    // delay(2000);
+    for (bool verifiable : verifiables)
+    {
+        if (verifiable)
+        {
+            ms24.setPercentAngle(MIN_DEPLOYMENT_ANGLE); // in is good if everything is working
+            delay(COMMUNICATION_VERIFICATION_DELAY);
+        }
+        else
+        {
+            ms24.setPercentAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
+            delay(COMMUNICATION_VERIFICATION_DELAY);
+            flag = true;
+        }
+        ms24.setPercentAngle(55);
+        delay(COMMUNICATION_VERIFICATION_DELAY);
+    }
+    ms24.setPercentAngle(MAX_DEPLOYMENT_ANGLE * flag);
+    delay(COMMUNICATION_VERIFICATION_DELAY);
 }
 
 
