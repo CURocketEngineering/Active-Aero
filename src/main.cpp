@@ -10,9 +10,12 @@
 #define TARGET_APOGEE 10000
 #define SERVO_PIN 6
 #define SD_CHIP_SELECT 5
-#define CROSS_AREA = 0.02725801
-#define DRAG_COEFFICIENT = 0.8
-#define ROCKET_MASS = 17.23
+#define FIN_RETRACTION_THRESHOLD_S 3.0f
+
+// currently cruft
+#define CROSS_AREA 0.02725801
+#define DRAG_COEFFICIENT 0.8
+#define ROCKET_MASS 17.23
 
 IDataSaver* dataSaver;
 VerticalVelocityEstimator* verticalVelocityEstimator;
@@ -27,7 +30,6 @@ ApogeePredictor ap(*verticalVelocityEstimator, 0.2, 1.0); // 0.2 is the alpha fo
 Telemetry telemetry; // do we care about this
 TelemetryData telemData; // still i ask, do we care
 
-const float finRetractionThreshold = 3; // seconds
 float servoAngle; // servo angle global
 double baseAlt;
 unsigned long previousTime;
@@ -105,39 +107,44 @@ void loop()
     Serial.println("Apogee Prediction: " + String(predApogee) + "m");
     Serial.println("Getting flight status");
 
-    // if(ap.getTimeToApogee_s() < finRetractionThreshold) // test fin full out to full in time
-    // {
-    //     ms24.setPercentAngle(0);
-    // }
+    if(ap.getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S) // test fin full out to full in time
+    {
+        ms24.setPercentAngle(0);
+    }
 
-    // else
-    // {
-    //     // Deployment logic for fins - stay 0 so we don't break them
-    //     if (sm.getState() == STATE_ARMED || sm.getState() == STATE_POWERED_ASCENT || sm.getState() == STATE_DESCENT)
-    //     {
-    //         servoAngle = 0;
-    //         ms24.setAngle(servoAngle);
-    //     }
-    //     // we actually want to deploy
-    //     else if (sm.getState() == STATE_COAST_ASCENT)
-    //     {
-    //         if(predApogee > TARGET_APOGEE)
-    //         {
-    //             servoAngle = 110; /* create function to deploy at an angle based on drag coefficient, for now use 110 */
-    //             ms24.setAngle(servoAngle);
-    //         }
-    //         else
-    //         {
-    //             servoAngle = 0;
-    //             ms24.setAngle(servoAngle);
-    //         }
-    //     }
-    // }
+    else
+    {
+        // Deployment logic for fins - stay 0 so we don't break them
+        if (sm.getState() == STATE_ARMED || sm.getState() == STATE_POWERED_ASCENT || sm.getState() == STATE_DESCENT)
+        {
+            servoAngle = 0;
+            ms24.setAngle(servoAngle);
+        }
+        // we actually want to deploy
+        else if (sm.getState() == STATE_COAST_ASCENT)
+        {
+            if(predApogee > TARGET_APOGEE)
+            {
+                servoAngle = 110; /* create function to deploy at an angle based on drag coefficient, for now use 110 */
+                ms24.setAngle(servoAngle);
+            }
+            else
+            {
+                servoAngle = 0;
+                ms24.setAngle(servoAngle);
+            }
+        }
+    }
 
-    // ms24.setAngle(110);
-    // delay(1000);
-    // ms24.setAngle(0);
-    // delay(1000);   
+    // comment in/out for servo testing
+    // rotate between 0 and 90 degrees 10 times with a 1 second delay
+    for (int i = 0; i < 10; i++)
+    {
+    ms24.setAngle(0);
+    delay(1000);
+    ms24.setAngle(90);
+    delay(1000);
+    }  
 }
 
 
