@@ -192,11 +192,6 @@ void loop()
     //     ms24.setAngle(110);
     //     delay(1000);
     // }  
-
-    ms24.setAngle(90);
-    Serial.println("Servo test complete, delaying");
-    delay(SETUP_DELAY);
-    ms24.setAngle(0);
 }
 
 
