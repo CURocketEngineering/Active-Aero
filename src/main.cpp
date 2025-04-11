@@ -61,6 +61,8 @@ double baseAlt;
 unsigned long previousTime;
 bool sd_init = false;
 
+void communicateVerification(bool sd_init);
+
 void setup()
 {
     Serial.begin(BAUD_RATE);
@@ -165,7 +167,7 @@ void loop()
         {
             Serial.println("Too close to apogee, retracting fins");
             targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
-            ms24.setPercentAngle(targetServoAngle);
+            ms24.setAngle(targetServoAngle);
         }
 
         Serial.println("Deploy them thangs");
@@ -180,8 +182,8 @@ void loop()
         ms24.setAngle(targetServoAngle);
     }
 
-    // // comment in/out for servo testing
-    // // rotate between 0 and 110 degrees 10 times with a 1 second delay
+    // comment in/out for servo testing
+    // rotate between 0 and 110 degrees 10 times with a 1 second delay
     // for (int i = 0; i < 10; i++)
     // {
     //     Serial.println("Servo test running...");
@@ -190,12 +192,17 @@ void loop()
     //     ms24.setAngle(110);
     //     delay(1000);
     // }  
+
+    ms24.setAngle(90);
+    Serial.println("Servo test complete, delaying");
+    delay(SETUP_DELAY);
+    ms24.setAngle(0);
 }
 
 
 void communicateVerification(bool sd_init)
 {
-    ms24.setPercentAngle(HALFWAY_DEPLOYED); // different from full deploy to visually confirm we're undergoing comms verification
+    ms24.setAngle(HALFWAY_DEPLOYED); // different from full deploy to visually confirm we're undergoing comms verification
     delay(COMMUNICATION_VERIFICATION_DELAY);
     SensorsActivated sensorsActivated = telemetry.getSensorsActivated();
     std::vector<bool> verifiables = {sensorsActivated.mag, sensorsActivated.bmp, sensorsActivated.imu, sd_init}; 
@@ -204,19 +211,19 @@ void communicateVerification(bool sd_init)
     {
         if (verifiable)
         {
-            ms24.setPercentAngle(MIN_DEPLOYMENT_ANGLE); // in is good if everything is working
+            ms24.setAngle(MIN_DEPLOYMENT_ANGLE); // in is good if everything is working
             delay(COMMUNICATION_VERIFICATION_DELAY);
         }
         else
         {
-            ms24.setPercentAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
+            ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
             delay(COMMUNICATION_VERIFICATION_DELAY);
             flag = true;
         }
-        ms24.setPercentAngle(55);
+        ms24.setAngle(HALFWAY_DEPLOYED);
         delay(COMMUNICATION_VERIFICATION_DELAY);
     }
-    ms24.setPercentAngle(MAX_DEPLOYMENT_ANGLE * flag);
+    ms24.setAngle(MAX_DEPLOYMENT_ANGLE * flag);
     delay(COMMUNICATION_VERIFICATION_DELAY);
 }
 
