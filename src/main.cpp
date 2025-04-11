@@ -1,45 +1,4 @@
-#include <Arduino.h>
-
-#include "telemetry.h"
-#include "servointerface.h"
-#include "state_estimation\ApogeePredictor.h"
-#include "state_estimation\BurnoutStateMachine.h" 
-#include "data_handling\DataNames.h"
-#include "data_handling\DataPoint.h"
-#include "data_handling\DataSaverBigSD.h"
-
-// servo + important board communication vars
-#define BAUD_RATE 115200
-#define SETUP_DELAY 15000 // millisec
-#define COMMUNICATION_VERIFICATION_DELAY 2000 // millisec
-#define SERVO_LOWER_PULSE 500
-#define SERVO_UPPER_PULSE 2500
-#define SERVO_RANGE 270
-
-// nom nom chips
-#define SERVO_PIN 6
-#define SD_CHIP_SELECT 5
-
-// math
-#define TARGET_APOGEE 10000
-#define ACCEL_THRESHOLD_MS2 40 // m/s^2
-#define LAUNCH_WINDOW_SIZE_MS 500 // millisec
-#define LAUNCH_WINDOW_INTERVAL_MS 25  // millisec
-#define OVERSHOOT_THRESHOLD 50.0f // meters
-// #define KP_ANGLE 0.05f // aggression of angle change based on predicted overshoot
-#define EMA_ALPHA 0.2f
-#define MINIMUM_CLIMB_VELOCITY 1.0f
-
-// fin deployment logic variables
-#define FIN_RETRACTION_THRESHOLD_S 3.0f
-#define MAX_DEPLOYMENT_ANGLE 110.0f
-#define HALFWAY_DEPLOYED 55.0f
-#define MIN_DEPLOYMENT_ANGLE 0.0f
-
-// currently cruft, but this could be very useful if we upgrade our math
-#define CROSS_AREA 0.02725801
-#define DRAG_COEFFICIENT 0.8
-#define ROCKET_MASS 17.23
+#include "config.h"
 
 VerticalVelocityEstimator* verticalVelocityEstimator;
 LaunchPredictor *lp;
@@ -170,8 +129,20 @@ void loop()
             ms24.setAngle(targetServoAngle);
         }
 
-        Serial.println("Deploy them thangs");
         /*** deployment logic here */
+        Serial.println("Deploy them thangs");
+        // currently very rudimentary, logic, I'll be replacing with something a bit more refined
+        // right now this is just going to make a sinusoidal nightmare
+        if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins
+        {
+            targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
+            ms24.setAngle(targetServoAngle);
+        }
+        else
+        {
+            targetServoAngle = MIN_DEPLOYMENT_ANGLE; 
+            ms24.setAngle(targetServoAngle);
+        }
 
     }
 
@@ -197,11 +168,11 @@ void loop()
 
 void communicateVerification(bool sd_init)
 {
-    ms24.setAngle(HALFWAY_DEPLOYED); // different from full deploy to visually confirm we're undergoing comms verification
+    ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // different from full deploy to visually confirm we're undergoing comms verification
     delay(COMMUNICATION_VERIFICATION_DELAY);
     SensorsActivated sensorsActivated = telemetry.getSensorsActivated();
     std::vector<bool> verifiables = {sensorsActivated.mag, sensorsActivated.bmp, sensorsActivated.imu, sd_init}; 
-    bool flag = false;
+    // bool flag = false;
     for (bool verifiable : verifiables)
     {
         if (verifiable)
@@ -213,13 +184,13 @@ void communicateVerification(bool sd_init)
         {
             ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
             delay(COMMUNICATION_VERIFICATION_DELAY);
-            flag = true;
+            // flag = true;
         }
-        ms24.setAngle(HALFWAY_DEPLOYED);
-        delay(COMMUNICATION_VERIFICATION_DELAY);
+        // ms24.setAngle(HALFWAY_DEPLOYED);
+        // delay(COMMUNICATION_VERIFICATION_DELAY);
     }
-    ms24.setAngle(MAX_DEPLOYMENT_ANGLE * flag);
-    delay(COMMUNICATION_VERIFICATION_DELAY);
+    // ms24.setAngle(MAX_DEPLOYMENT_ANGLE * flag);
+    delay(COMMUNICATION_VERIFICATION_DELAY); // delay before returning to main
 }
 
 
