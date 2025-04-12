@@ -73,6 +73,8 @@ void loop()
     // init telem & telem sensor recording
     telemData = telemetry.getTelemetry();
 
+    Serial.println("Got telem");
+
     // if you ever change the orientation of the sensors, this WILL probably need to be adjusted
     telemData.sensorData["magnetometer"].magnetic.x = telemData.sensorData["magnetometer"].magnetic.y * -1; 
     telemData.sensorData["magnetometer"].magnetic.y = telemData.sensorData["magnetometer"].magnetic.x;
@@ -121,12 +123,13 @@ void loop()
 
     // get the current time
     unsigned long nowTime = millis();
-    float dt = previousTime - nowTime;
+    float dt = nowTime - previousTime; // time since last loop
     previousTime = nowTime; 
 
     if (dt > 0){
         // Save the recriprocal of the time step (ms) to get HZ
         float hz = 1000.0f / dt;
+        Serial.println("Hz: " + String(hz));
         // Save this as a data point
         dataSaver->saveDataPoint(DataPoint(nowTime, hz), AVERAGE_CYCLE_RATE);
     }

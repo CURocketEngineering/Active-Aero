@@ -4,12 +4,6 @@ Telemetry::Telemetry() {}
 
 void Telemetry::setupSensors()
 {
-    // Serial.println("Initializing BNO and BMP");
-    // while (!bmp.begin_I2C()) {}
-    // Serial.println("BMP initialized");
-    // while (!bno08x.begin_I2C(0x4A)) {}
-    // Serial.println("BNO initialized");
-    // Serial.println("BNO and BMP initialized");
 
     if (!sensorsActivated.imu)
     {
@@ -93,15 +87,18 @@ TelemetryData Telemetry::getTelemetry()
     SensorData acceleration;
     SensorData gyro;
     SensorData temp;
+
+    // Serial.println("Getting IMU data");
     imu.getEvent(&acceleration, &gyro, &temp);
     data["acceleration"] = acceleration;
     data["gyro"] = gyro;
 
     SensorData magnetometerData;
     mag.getEvent(&magnetometerData);
-
     data["magnetometer"] = magnetometerData;
 
+
+    // Serial.println("Getting BMP data");
     if (bmp.performReading())
     {
         SensorData temperatureData;
