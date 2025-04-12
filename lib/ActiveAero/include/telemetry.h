@@ -1,11 +1,21 @@
 #ifndef TELEMETRY_H
 #define TELEMETRY_H
 
-#include <Adafruit_LSM6DSOX.h>
-#include <Adafruit_LIS3MDL.h>
-#include <Adafruit_BMP3XX.h>
-#include <Adafruit_Sensor.h>
 #include <Arduino.h>
+
+#ifdef SIM
+    #include "simulation/Serial_Sim_LSM6DSOX.h"
+    #include "simulation/Serial_Sim_LIS3MDL.h"
+    #include "simulation/Serial_Sim_BMP390.h"
+    #include "simulation/Serial_Sim.h"
+#else
+    #include <Adafruit_LSM6DSOX.h>
+    #include <Adafruit_LIS3MDL.h>
+    #include <Adafruit_BMP3XX.h>
+#endif
+
+#include <Adafruit_Sensor.h>
+
 
 #include <map>
 #include <string>

@@ -62,11 +62,19 @@ void setup()
 
     Serial.println("Entering communication verification...");
     communicateVerification(sd_init);
+
+    #ifdef SIM
+    SerialSim::getInstance().begin(&Serial, sm);
+    #endif
 }
 
 
 void loop()
-{
+{   
+    #ifdef SIM
+    SerialSim::getInstance().update();
+    #endif
+
     unsigned long loopStartTime = millis();
     Serial.println("Loop start time: " + String(loopStartTime));
 
