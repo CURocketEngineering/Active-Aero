@@ -10,7 +10,7 @@ BurnoutStateMachine* sm = nullptr;
 ApogeePredictor* ap = nullptr; // 0.2 is the alpha for the EMA, 1.0 is the minimum climb velocity
 
 DataSaverBigSD* dataSaver;
-DataPoint aclX, aclY, aclZ, alt;
+DataPoint aclX, aclY, aclZ, alt, temp, pres, gyroX, gyroY, gyroZ;
 
 Telemetry telemetry; 
 TelemetryData telemData; 
@@ -85,6 +85,18 @@ void loop()
     aclY.data = telemData.sensorData["acceleration"].acceleration.y;
     aclZ.data = telemData.sensorData["acceleration"].acceleration.z;
     alt.data = currAlt;
+
+    gyroX.data = telemData.sensorData["gyro"].gyro.x;
+    gyroX.timestamp_ms = telemData.timestamp;
+    gyroY.data = telemData.sensorData["gyro"].gyro.y;
+    gyroY.timestamp_ms = telemData.timestamp;
+    gyroZ.data = telemData.sensorData["gyro"].gyro.z;
+    gyroZ.timestamp_ms = telemData.timestamp;
+    temp.data = telemData.sensorData["temperature"].temperature;
+    temp.timestamp_ms = telemData.timestamp;
+    pres.data = telemData.sensorData["pressure"].pressure;
+    pres.timestamp_ms = telemData.timestamp;
+
     Serial.println("Retrieved accelerometer data");
 
     unsigned long currTime = millis();
@@ -96,6 +108,11 @@ void loop()
     dataSaver->saveDataPoint(aclY, ACCELEROMETER_Y);
     dataSaver->saveDataPoint(aclZ, ACCELEROMETER_Z);
     dataSaver->saveDataPoint(alt, ALTITUDE);
+    dataSaver->saveDataPoint(temp, TEMPERATURE);
+    dataSaver->saveDataPoint(pres, PRESSURE);
+    dataSaver->saveDataPoint(gyroX, GYROSCOPE_X);
+    dataSaver->saveDataPoint(gyroY, GYROSCOPE_Y);
+    dataSaver->saveDataPoint(gyroZ, GYROSCOPE_Z);
 
     // update state we're in  (Do not update the ap or vve, because the state machine will do that)
     // IMPORTANT: Do not update the vve until after launch, so it's vertical axis determination is correct
