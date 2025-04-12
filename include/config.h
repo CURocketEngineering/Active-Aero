@@ -11,6 +11,8 @@
 #include "data_handling/DataPoint.h"
 #include "data_handling/DataSaverBigSD.h"
 
+#define LAUNCH_TYPE 1 // 1 for simple launch, 0 advanced launch
+
 // mission configuration variables
 #define TARGET_APOGEE 10000
 #define BAUD_RATE 115200
