@@ -116,6 +116,8 @@ void loop()
 
     float targetServoAngle = MIN_DEPLOYMENT_ANGLE; // Default to retracted
 
+    dataSaver->saveDataPoint(DataPoint(millis(), targetServoAngle), FIN_DEPLOYMENT_AMOUNT); // save the servo angle to the data saver
+
     // we actually want to deploy
     if (sm->getState() == STATE_COAST_ASCENT)
     {
