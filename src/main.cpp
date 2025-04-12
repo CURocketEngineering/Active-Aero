@@ -207,9 +207,11 @@ void communicateVerification(bool sd_init)
         }
         else
         {
+            Serial.println("Sensor activation is not working: " + String(verifiable));
             ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
             delay(COMMUNICATION_VERIFICATION_DELAY);
         }
     }
+    Serial.println("Finished communication verification, entering main loop...");
     delay(COMMUNICATION_VERIFICATION_DELAY); // delay before returning to main
 }
