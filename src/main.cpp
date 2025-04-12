@@ -97,13 +97,10 @@ void loop()
     dataSaver->saveDataPoint(aclZ, ACCELEROMETER_Z);
     dataSaver->saveDataPoint(alt, ALTITUDE);
 
-    // update state we're in, update vve, update altitude prediction
-    verticalVelocityEstimator->update(aclX, aclY, aclZ, alt);
-    ap->update();
+    // update state we're in  (Do not update the ap or vve, because the state machine will do that)
+    // IMPORTANT: Do not update the vve until after launch, so it's vertical axis determination is correct
     sm->update(aclX, aclY, aclZ, alt);
     Serial.println("Updated state machine, current state: " + String(sm->getState()));
-
-    float vAccel = verticalVelocityEstimator->getInertialVerticalAcceleration(); // board has to be facing upwards
 
     // complicated time calculations (contact Samuel Pupke or Mikey Schoonmaker if you have any questions/need a walk through)
     unsigned long nowTime = millis();
