@@ -1,15 +1,15 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <Arduino.h> 
+#include "ArduinoHAL.h"
 
 #include "telemetry.h"
 #include "servointerface.h"
-#include "state_estimation\ApogeePredictor.h"
-#include "state_estimation\BurnoutStateMachine.h" 
-#include "data_handling\DataNames.h"
-#include "data_handling\DataPoint.h"
-#include "data_handling\DataSaverBigSD.h"
+#include "state_estimation/ApogeePredictor.h"
+#include "state_estimation/BurnoutStateMachine.h" 
+#include "data_handling/DataNames.h"
+#include "data_handling/DataPoint.h"
+#include "data_handling/DataSaverBigSD.h"
 
 // mission configuration variables
 #define TARGET_APOGEE 10000
