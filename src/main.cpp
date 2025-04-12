@@ -45,7 +45,7 @@ void setup()
 
     // confirm initialization, setup sd data saver
     sd_init = dataSaver->begin();
-    if(dataSaver) { Serial.println("Data saver initialized"); sd_init = true; } else { Serial.println("Data saver not initialized"); sd_init = false; }
+    if(dataSaver) { Serial.println("Data saver initialized"); } else { Serial.println("Data saver not initialized"); }
     if(verticalVelocityEstimator) { Serial.println("Vertical velocity estimator initialized"); } else { Serial.println("Vertical velocity estimator not initialized"); }
     if(ad) { Serial.println("Apogee detector initialized"); } else { Serial.println("Apogee detector not initialized"); }
     if(lp) { Serial.println("Launch predictor initialized"); } else { Serial.println("Launch predictor not initialized"); }
