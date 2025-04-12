@@ -107,6 +107,13 @@ void loop()
     float dt = previousTime - nowTime;
     previousTime = nowTime; // hold onto your bootstraps kid, this is where it gets WILD
 
+    if (dt > 0){
+        // Save the recriprocal of the time step (ms) to get HZ
+        float hz = 1000.0f / dt;
+        // Save this as a data point
+        dataSaver->saveDataPoint(DataPoint(nowTime, hz), AVERAGE_CYCLE_RATE);
+    }
+
     Serial.println("Time equations passed, thank goodness our processor made it");
     Serial.printf("x_hat: \t%f m/s, \t%f m/s/s", verticalVelocityEstimator->getEstimatedVelocity(), verticalVelocityEstimator->getInertialVerticalAcceleration());
 
