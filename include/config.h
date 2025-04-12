@@ -19,7 +19,7 @@
 #define SETUP_DELAY 15000 // millisec
 #define COMMUNICATION_VERIFICATION_DELAY 2000 // millisec
 
-// nom nom chips, eat the microcontroller
+// chip setup
 #define SERVO_PIN 6
 #define SD_CHIP_SELECT 5
 
@@ -36,7 +36,7 @@
 
 // anything related to the math behind deployment
 #define OVERSHOOT_THRESHOLD 50.0f // meters
-// #define KP_ANGLE 0.05f // aggression of angle change based on predicted overshoot, I'm working this into the deployment logic
+// #define KP_ANGLE 0.05f // aggression of angle change based on predicted overshoot, potentially work into logic
 #define EMA_ALPHA 0.2f
 #define MINIMUM_CLIMB_VELOCITY 1.0f
 

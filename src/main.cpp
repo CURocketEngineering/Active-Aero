@@ -43,8 +43,8 @@ void setup()
     sm = new BurnoutStateMachine(dataSaver, lp, ad, verticalVelocityEstimator);
     ap = new ApogeePredictor(*verticalVelocityEstimator, EMA_ALPHA, MINIMUM_CLIMB_VELOCITY);
 
-    // confirm initialization 
-    sd_init = false;
+    // confirm initialization, setup sd data saver
+    sd_init = dataSaver->begin();
     if(dataSaver) { Serial.println("Data saver initialized"); sd_init = true; } else { Serial.println("Data saver not initialized"); sd_init = false; }
     if(verticalVelocityEstimator) { Serial.println("Vertical velocity estimator initialized"); } else { Serial.println("Vertical velocity estimator not initialized"); }
     if(ad) { Serial.println("Apogee detector initialized"); } else { Serial.println("Apogee detector not initialized"); }
@@ -52,7 +52,7 @@ void setup()
     if(sm) { Serial.println("State machine initialized"); } else { Serial.println("State machine not initialized"); }
     if(ap) { Serial.println("Apogee predictor initialized"); } else { Serial.println("Apogee predictor not initialized"); }
 
-    Serial.println(telemetry.getSensorConfig().c_str()); // debugging and shizzle
+    Serial.println(telemetry.getSensorConfig().c_str()); // debugging 
 
     // LED communication/verif
     pinMode(LED_BUILTIN, OUTPUT);
@@ -102,10 +102,10 @@ void loop()
     sm->update(aclX, aclY, aclZ, alt);
     Serial.println("Updated state machine, current state: " + String(sm->getState()));
 
-    // complicated time calculations (contact Samuel Pupke or Mikey Schoonmaker if you have any questions/need a walk through)
+    // get the current time
     unsigned long nowTime = millis();
     float dt = previousTime - nowTime;
-    previousTime = nowTime; // hold onto your bootstraps kid, this is where it gets WILD
+    previousTime = nowTime; 
 
     if (dt > 0){
         // Save the recriprocal of the time step (ms) to get HZ
@@ -114,7 +114,6 @@ void loop()
         dataSaver->saveDataPoint(DataPoint(nowTime, hz), AVERAGE_CYCLE_RATE);
     }
 
-    Serial.println("Time equations passed, thank goodness our processor made it");
     Serial.printf("x_hat: \t%f m/s, \t%f m/s/s", verticalVelocityEstimator->getEstimatedVelocity(), verticalVelocityEstimator->getInertialVerticalAcceleration());
 
     double predApogee = ap->getPredictedApogeeAltitude_m();
@@ -136,13 +135,25 @@ void loop()
         }
 
         /*** deployment logic here */
-        Serial.println("Deploy them thangs");
-        // currently very rudimentary, logic, I'll be replacing with something a bit more refined
-        // right now this is just going to make a sinusoidal nightmare
+        Serial.println("Deploying fins");
+        // currently very rudimentary, logic, should be replacing with something a bit more refined
         if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins
         {
             targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
             ms24.setAngle(targetServoAngle);
+
+            /**
+             * 
+             * I'm considering making deployment logic a function of the overshoot ->
+             * 
+             * if overshooting, targetServoAngle = amt_overshooting_m * proportional gain 
+             * targetServoAngle = constrain(targetAngle, MIN_DEPLOY, MAX_DEPLOY)
+             * ms24.setAngle(targetServoAngle)
+             * 
+             * gives us a little more control over aggression of deployment as we launch this more & learn in the future, and has a bit
+             * more finesse behind it than the current "if overshooting, max deploy"
+             * 
+             */
         }
         else
         {
@@ -171,14 +182,22 @@ void loop()
     // }  
 }
 
-
+/***
+ * initally deploys fins to show that we are in the communicate verification function
+ * retracts fins before entering loop
+ * if fins deploy after that point, we have an error
+ */
 void communicateVerification(bool sd_init)
 {
+    // moving fins to visually show we're in comms check
     ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // different from full deploy to visually confirm we're undergoing comms verification
     delay(COMMUNICATION_VERIFICATION_DELAY);
+    ms24.setAngle(MIN_DEPLOYMENT_ANGLE);
+    delay(COMMUNICATION_VERIFICATION_DELAY);
+
+    // init loop to check sensors & sd ptr
     SensorsActivated sensorsActivated = telemetry.getSensorsActivated();
     std::vector<bool> verifiables = {sensorsActivated.mag, sensorsActivated.bmp, sensorsActivated.imu, sd_init}; 
-    // bool flag = false;
     for (bool verifiable : verifiables)
     {
         if (verifiable)
@@ -190,15 +209,7 @@ void communicateVerification(bool sd_init)
         {
             ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
             delay(COMMUNICATION_VERIFICATION_DELAY);
-            // flag = true;
         }
-        // ms24.setAngle(HALFWAY_DEPLOYED);
-        // delay(COMMUNICATION_VERIFICATION_DELAY);
     }
-    // ms24.setAngle(MAX_DEPLOYMENT_ANGLE * flag);
     delay(COMMUNICATION_VERIFICATION_DELAY); // delay before returning to main
 }
-
-
-
-//      "All of the calculations show it can't work. There's only one thing to do: make it work."
