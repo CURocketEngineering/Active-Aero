@@ -18,7 +18,7 @@
 #define BAUD_RATE 115200
 
 // delays embedded within functions
-#define SETUP_DELAY 15000 // millisec
+#define SETUP_DELAY 5000 // millisec
 #define COMMUNICATION_VERIFICATION_DELAY 2000 // millisec
 
 // chip setup
