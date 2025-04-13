@@ -32,7 +32,7 @@
 
 // fin deployment logic variables
 #define FIN_RETRACTION_THRESHOLD_S 3.0f
-#define FIN_EJECTION_DELAY_S 1.0f
+#define FIN_EJECTION_DELAY_MS 1000
 #define MAX_DEPLOYMENT_ANGLE 110.0f
 #define HALFWAY_DEPLOYED 55.0f
 #define MIN_DEPLOYMENT_ANGLE 0.0f

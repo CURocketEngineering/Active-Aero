@@ -139,7 +139,7 @@ void loop()
             startCoastTime = millis();
         }
 
-        if(ap->getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S || (millis() - startCoastTime) < FIN_EJECTION_DELAY_S) // test fin full out to full in time
+        if(ap->getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S || (millis() - startCoastTime) < FIN_EJECTION_DELAY_MS) // test fin full out to full in time
         {
             targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
         }
