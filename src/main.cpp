@@ -19,6 +19,7 @@ float servoAngle; // servo angle global
 double baseAlt;
 unsigned long previousTime;
 bool sd_init = false;
+float targetServoAngle;
 
 void communicateVerification(bool sd_init);
 
@@ -27,11 +28,9 @@ void setup()
     Serial.begin(BAUD_RATE);
     delay(SETUP_DELAY);
     // put your setup code here, to run once:
-    Serial.println("Starting up");
     ms24.setup(SERVO_PIN, SERVO_RANGE, SERVO_LOWER_PULSE, SERVO_UPPER_PULSE);
     telemetry.setupSensors();
 
-    Serial.println("Initializing object pointers (data saver, vve, ad, sm, etc.)...");
     dataSaver = new DataSaverBigSD(SD_CHIP_SELECT); // Ensure SD is initialized correctly
 
     // init new pointers here (ld, ap, vve, etc.)
@@ -45,29 +44,19 @@ void setup()
 
     // confirm initialization, setup sd data saver
     sd_init = dataSaver->begin();
-    if(dataSaver) { Serial.println("Data saver initialized"); } else { Serial.println("Data saver not initialized"); }
-    if(verticalVelocityEstimator) { Serial.println("Vertical velocity estimator initialized"); } else { Serial.println("Vertical velocity estimator not initialized"); }
-    if(ad) { Serial.println("Apogee detector initialized"); } else { Serial.println("Apogee detector not initialized"); }
-    if(lp) { Serial.println("Launch predictor initialized"); } else { Serial.println("Launch predictor not initialized"); }
-    if(sm) { Serial.println("State machine initialized"); } else { Serial.println("State machine not initialized"); }
-    if(ap) { Serial.println("Apogee predictor initialized"); } else { Serial.println("Apogee predictor not initialized"); }
-
-    Serial.println(telemetry.getSensorConfig().c_str()); // debugging 
 
     // LED communication/verif
     pinMode(LED_BUILTIN, OUTPUT);
-    Serial.println("Finished setup");
     digitalWrite(LED_BUILTIN, HIGH);
     previousTime = millis();
 
-    Serial.println("Entering communication verification...");
+    targetServoAngle = MIN_DEPLOYMENT_ANGLE; // Default to retracted
     communicateVerification(sd_init);
 
     #ifdef SIM
     SerialSim::getInstance().begin(&Serial, sm);
     #endif
 }
-
 
 void loop()
 {   
@@ -77,7 +66,6 @@ void loop()
     #endif
 
     unsigned long loopStartTime = millis();
-    Serial.println("Loop start time: " + String(loopStartTime));
 
     // init telem & telem sensor recording
     telemData = telemetry.getTelemetry();
@@ -86,7 +74,7 @@ void loop()
     telemData.sensorData["magnetometer"].magnetic.x = telemData.sensorData["magnetometer"].magnetic.y * -1; 
     telemData.sensorData["magnetometer"].magnetic.y = telemData.sensorData["magnetometer"].magnetic.x;
 
-    double currAlt = telemData.sensorData["altitude"].altitude; // will be used later so store
+    float currAlt = telemData.sensorData["altitude"].altitude; // will be used later so store
 
     // update data points
     aclX.data = telemData.sensorData["acceleration"].acceleration.x;
@@ -131,12 +119,9 @@ void loop()
     if (dt > 0){
         // Save the recriprocal of the time step (ms) to get HZ
         float hz = 1000.0f / dt;
-        Serial.println("Hz: " + String(hz));
         // Save this as a data point
         dataSaver->saveDataPoint(DataPoint(nowTime, hz), AVERAGE_CYCLE_RATE);
     }
-
-    Serial.printf("x_hat: \t%f m/s, \t%f m/s/s", verticalVelocityEstimator->getEstimatedVelocity(), verticalVelocityEstimator->getInertialVerticalAcceleration());
 
     // update apogee predictor
     ap->update(); // update the apogee predictor with the current data points
@@ -144,35 +129,26 @@ void loop()
     dataSaver->saveDataPoint(DataPoint(millis(), predApogee), EST_APOGEE); // save the predicted apogee to the data saver
     // Save time to apogee
     dataSaver->saveDataPoint(DataPoint(millis(), ap->getTimeToApogee_s()), TIME_TO_APOGEE); // save the time to apogee to the data saver
-    float targetServoAngle = MIN_DEPLOYMENT_ANGLE; // Default to retracted
 
-    dataSaver->saveDataPoint(DataPoint(millis(), targetServoAngle), FIN_DEPLOYMENT_AMOUNT); // save the servo angle to the data saver
-
-    // we actually want to deploy
-    if (sm->getState() == STATE_COAST_ASCENT)
+    if (sm->getState() == STATE_COAST_ASCENT) // we actually want to deploy
     {
-        if(ap->getTimeToApogee_s() >= 0 && ap->getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S) // test fin full out to full in time
+        if(ap->getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S) // test fin full out to full in time
         {
-            Serial.println("Too close to apogee, retracting fins");
             targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
-            ms24.setAngle(targetServoAngle);
         }
-
-        /*** deployment logic here */
-        Serial.println("Deploying fins");
-
         #ifdef TEST_LAUNCH // for the 04/13/2025 flight to just test if the fins will deploy
-        targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
-        ms24.setAngle(targetServoAngle);
+        else // if we're in SCA, deploy to the maximum possible angle (-10/+10)
+        {
+            targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
+        }
         #endif
 
         // currently very rudimentary, logic, should be replacing with something a bit more refined
         #ifndef TEST_LAUNCH
-        {
+        else {
             if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins
             {
                 targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
-                ms24.setAngle(targetServoAngle);
     
                 /**
                  * 
@@ -190,28 +166,18 @@ void loop()
             else
             {
                 targetServoAngle = MIN_DEPLOYMENT_ANGLE; 
-                ms24.setAngle(targetServoAngle);
             }
         }
         #endif
     }
-
     else    
     { // If we're not in SCA, stay 0 so we don't break the fins
-        targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
-        ms24.setAngle(targetServoAngle);
+        targetServoAngle = MIN_DEPLOYMENT_ANGLE; 
     }
 
-    // comment in/out for servo testing
-    // rotate between 0 and 110 degrees 10 times with a 1 second delay
-    // for (int i = 0; i < 10; i++)
-    // {
-    //     Serial.println("Servo test running...");
-    //     ms24.setAngle(0);
-    //     delay(1000);
-    //     ms24.setAngle(110);
-    //     delay(1000);
-    // }  
+    // set angle and log at the end of each iteration
+    dataSaver->saveDataPoint(DataPoint(millis(), targetServoAngle), FIN_DEPLOYMENT_AMOUNT); // save the servo angle to the data saver
+    ms24.setAngle(targetServoAngle); 
 }
 
 /***
@@ -239,11 +205,9 @@ void communicateVerification(bool sd_init)
         }
         else
         {
-            Serial.println("Sensor activation is not working: " + String(verifiable));
             ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
             delay(COMMUNICATION_VERIFICATION_DELAY);
         }
     }
-    Serial.println("Finished communication verification, entering main loop...");
     delay(COMMUNICATION_VERIFICATION_DELAY); // delay before returning to main
 }
