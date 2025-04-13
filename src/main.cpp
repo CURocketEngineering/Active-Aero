@@ -62,10 +62,6 @@ void setup()
 
     Serial.println("Entering communication verification...");
     communicateVerification(sd_init);
-
-    #ifdef SIM
-    SerialSim::getInstance().begin(&Serial, sm);
-    #endif
 }
 
 
@@ -156,31 +152,40 @@ void loop()
 
         /*** deployment logic here */
         Serial.println("Deploying fins");
+
+        #ifdef TEST_LAUNCH // for the 04/13/2025 flight to just test if the fins will deploy
+        targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
+        ms24.setAngle(targetServoAngle);
+        #endif
+
         // currently very rudimentary, logic, should be replacing with something a bit more refined
-        if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins
+        #ifndef TEST_LAUNCH
         {
-            targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
-            ms24.setAngle(targetServoAngle);
-
-            /**
-             * 
-             * I'm considering making deployment logic a function of the overshoot ->
-             * 
-             * if overshooting, targetServoAngle = amt_overshooting_m * proportional gain 
-             * targetServoAngle = constrain(targetAngle, MIN_DEPLOY, MAX_DEPLOY)
-             * ms24.setAngle(targetServoAngle)
-             * 
-             * gives us a little more control over aggression of deployment as we launch this more & learn in the future, and has a bit
-             * more finesse behind it than the current "if overshooting, max deploy"
-             * 
-             */
+            if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins
+            {
+                targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
+                ms24.setAngle(targetServoAngle);
+    
+                /**
+                 * 
+                 * I'm considering making deployment logic a function of the overshoot ->
+                 * 
+                 * if overshooting, targetServoAngle = amt_overshooting_m * proportional gain 
+                 * targetServoAngle = constrain(targetAngle, MIN_DEPLOY, MAX_DEPLOY)
+                 * ms24.setAngle(targetServoAngle)
+                 * 
+                 * gives us a little more control over aggression of deployment as we launch this more & learn in the future, and has a bit
+                 * more finesse behind it than the current "if overshooting, max deploy"
+                 * 
+                 */
+            }
+            else
+            {
+                targetServoAngle = MIN_DEPLOYMENT_ANGLE; 
+                ms24.setAngle(targetServoAngle);
+            }
         }
-        else
-        {
-            targetServoAngle = MIN_DEPLOYMENT_ANGLE; 
-            ms24.setAngle(targetServoAngle);
-        }
-
+        #endif
     }
 
     else    

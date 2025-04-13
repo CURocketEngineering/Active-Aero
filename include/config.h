@@ -11,7 +11,7 @@
 #include "data_handling/DataPoint.h"
 #include "data_handling/DataSaverBigSD.h"
 
-#define LAUNCH_TYPE 1 // 1 for simple launch, 0 advanced launch
+#define TEST_LAUNCH 1 // for the 04/13/2025 flight to just test if the fins will deploy
 
 // mission configuration variables
 #define TARGET_APOGEE 10000
@@ -31,7 +31,7 @@
 #define SERVO_RANGE 270
 
 // fin deployment logic variables
-#define FIN_RETRACTION_THRESHOLD_S 1.5f
+#define FIN_RETRACTION_THRESHOLD_S 3.0f
 #define MAX_DEPLOYMENT_ANGLE 110.0f
 #define HALFWAY_DEPLOYED 55.0f
 #define MIN_DEPLOYMENT_ANGLE 0.0f
