@@ -62,6 +62,10 @@ void setup()
 
     Serial.println("Entering communication verification...");
     communicateVerification(sd_init);
+
+    #ifdef SIM
+    SerialSim::getInstance().begin(&Serial, sm);
+    #endif
 }
 
 
@@ -134,8 +138,12 @@ void loop()
 
     Serial.printf("x_hat: \t%f m/s, \t%f m/s/s", verticalVelocityEstimator->getEstimatedVelocity(), verticalVelocityEstimator->getInertialVerticalAcceleration());
 
-    double predApogee = ap->getPredictedApogeeAltitude_m();
-
+    // update apogee predictor
+    ap->update(); // update the apogee predictor with the current data points
+    float predApogee = ap->getPredictedApogeeAltitude_m();
+    dataSaver->saveDataPoint(DataPoint(millis(), predApogee), EST_APOGEE); // save the predicted apogee to the data saver
+    // Save time to apogee
+    dataSaver->saveDataPoint(DataPoint(millis(), ap->getTimeToApogee_s()), TIME_TO_APOGEE); // save the time to apogee to the data saver
     float targetServoAngle = MIN_DEPLOYMENT_ANGLE; // Default to retracted
 
     dataSaver->saveDataPoint(DataPoint(millis(), targetServoAngle), FIN_DEPLOYMENT_AMOUNT); // save the servo angle to the data saver
