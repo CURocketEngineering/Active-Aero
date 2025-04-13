@@ -36,7 +36,7 @@ void setup()
 
     // init new pointers here (ld, ap, vve, etc.)
     verticalVelocityEstimator = new VerticalVelocityEstimator();
-    ad = new ApogeeDetector(OVERSHOOT_THRESHOLD);
+    ad = new ApogeeDetector(1.0f); // 1.0f is the apogee threshold in meters
     lp = new LaunchPredictor(ACCEL_THRESHOLD_MS2, LAUNCH_WINDOW_SIZE_MS, LAUNCH_WINDOW_INTERVAL_MS); // blanket values ripped from MARTHA
 
     // NOW initialize objects that use the pointers
@@ -73,6 +73,7 @@ void loop()
 {   
     #ifdef SIM
     SerialSim::getInstance().update();
+    delay(10);
     #endif
 
     unsigned long loopStartTime = millis();
@@ -81,14 +82,11 @@ void loop()
     // init telem & telem sensor recording
     telemData = telemetry.getTelemetry();
 
-    Serial.println("Got telem");
-
     // if you ever change the orientation of the sensors, this WILL probably need to be adjusted
     telemData.sensorData["magnetometer"].magnetic.x = telemData.sensorData["magnetometer"].magnetic.y * -1; 
     telemData.sensorData["magnetometer"].magnetic.y = telemData.sensorData["magnetometer"].magnetic.x;
 
     double currAlt = telemData.sensorData["altitude"].altitude; // will be used later so store
-    Serial.println("Retrieved data altimeter and magnetometer data");
 
     // update data points
     aclX.data = telemData.sensorData["acceleration"].acceleration.x;
@@ -107,12 +105,9 @@ void loop()
     pres.data = telemData.sensorData["pressure"].pressure;
     pres.timestamp_ms = telemData.timestamp;
 
-    Serial.println("Retrieved accelerometer data");
-
     unsigned long currTime = millis();
     aclX.timestamp_ms = aclY.timestamp_ms = aclZ.timestamp_ms = alt.timestamp_ms = currTime; // record timestamp for data points
 
-    Serial.println("Saving data...");
     // save the data points to their respective data names
     dataSaver->saveDataPoint(aclX, ACCELEROMETER_X);
     dataSaver->saveDataPoint(aclY, ACCELEROMETER_Y);
@@ -127,7 +122,6 @@ void loop()
     // update state we're in  (Do not update the ap or vve, because the state machine will do that)
     // IMPORTANT: Do not update the vve until after launch, so it's vertical axis determination is correct
     sm->update(aclX, aclY, aclZ, alt);
-    Serial.println("Updated state machine, current state: " + String(sm->getState()));
 
     // get the current time
     unsigned long nowTime = millis();
@@ -145,8 +139,6 @@ void loop()
     Serial.printf("x_hat: \t%f m/s, \t%f m/s/s", verticalVelocityEstimator->getEstimatedVelocity(), verticalVelocityEstimator->getInertialVerticalAcceleration());
 
     double predApogee = ap->getPredictedApogeeAltitude_m();
-    Serial.println("Apogee Prediction: " + String(predApogee) + "m");
-    Serial.println("Getting flight status");
 
     float targetServoAngle = MIN_DEPLOYMENT_ANGLE; // Default to retracted
 
@@ -193,7 +185,6 @@ void loop()
 
     else    
     { // If we're not in SCA, stay 0 so we don't break the fins
-        Serial.println("Not in coast ascent, retracting fins");
         targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
         ms24.setAngle(targetServoAngle);
     }
