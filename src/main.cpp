@@ -20,6 +20,7 @@ double baseAlt;
 unsigned long previousTime;
 bool sd_init = false;
 float targetServoAngle;
+uint32_t startCoastTime;
 
 void communicateVerification(bool sd_init);
 
@@ -51,6 +52,7 @@ void setup()
     previousTime = millis();
 
     targetServoAngle = MIN_DEPLOYMENT_ANGLE; // Default to retracted
+    startCoastTime = 0;
     communicateVerification(sd_init);
 
     #ifdef SIM
@@ -132,7 +134,12 @@ void loop()
 
     if (sm->getState() == STATE_COAST_ASCENT) // we actually want to deploy
     {
-        if(ap->getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S) // test fin full out to full in time
+        if(startCoastTime == 0)
+        {
+            startCoastTime = millis();
+        }
+
+        if(ap->getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S || (millis() - startCoastTime) < FIN_EJECTION_THRESHOLD_S) // test fin full out to full in time
         {
             targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
         }
