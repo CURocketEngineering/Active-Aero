@@ -1,86 +1,221 @@
-#include <Arduino.h>
+#include "config.h"
 
-#include "telemetry.h"
-#include "apogeeprediction.h"
-#include "flightstatus.h"
-// #include "sdlogger.h"
-#include "ahrs.h"
-#include "kf-2d.h"
+VerticalVelocityEstimator* verticalVelocityEstimator;
+LaunchPredictor *lp;
+ApogeeDetector *ad;
+ServoInterface ms24;
 
-// SDLogger sdLogger;
-Telemetry telemetry;
-FlightStatus flightStatus;
-AHRS ahrs;
-KF2D KF;
+// these values when initialized are going to be pointing to null val - they're better definined in setup
+BurnoutStateMachine* sm = nullptr;
+ApogeePredictor* ap = nullptr; // 0.2 is the alpha for the EMA, 1.0 is the minimum climb velocity
 
+DataSaverBigSD* dataSaver;
+DataPoint aclX, aclY, aclZ, alt, temp, pres, gyroX, gyroY, gyroZ;
+
+Telemetry telemetry; 
+TelemetryData telemData; 
+
+float servoAngle; // servo angle global
 double baseAlt;
-KF2D::MeasurementVector measurement;
-TelemetryData telemData;
+unsigned long previousTime;
+bool sd_init = false;
+float targetServoAngle;
+uint32_t startCoastTime;
+
+void communicateVerification(bool sd_init);
 
 void setup()
 {
-  delay(5000);
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  // while (!Serial) {}
-  Serial.println("Starting up");
+    Serial.begin(BAUD_RATE);
+    delay(SETUP_DELAY);
+    // put your setup code here, to run once:
+    ms24.setup(SERVO_PIN, SERVO_RANGE, SERVO_LOWER_PULSE, SERVO_UPPER_PULSE);
+    telemetry.setupSensors();
 
-  //sdLogger.setup();
+    dataSaver = new DataSaverBigSD(SD_CHIP_SELECT); // Ensure SD is initialized correctly
 
-  telemetry.setupSensors();
-  //sdLogger.writeLog("Setup complete");
-  // Serial.println(telemetry.getSensorConfig().c_str());
-  //sdLogger.writeLog(telemetry.getSensorConfig());
+    // init new pointers here (ld, ap, vve, etc.)
+    verticalVelocityEstimator = new VerticalVelocityEstimator();
+    ad = new ApogeeDetector(1.0f); // 1.0f is the apogee threshold in meters
+    lp = new LaunchPredictor(ACCEL_THRESHOLD_MS2, LAUNCH_WINDOW_SIZE_MS, LAUNCH_WINDOW_INTERVAL_MS); // blanket values ripped from MARTHA
 
-  ahrs.begin(115200); // sample frequency
-  ahrs.setRotationVector(0, 0, 0);
-  //the next 2 lines should be run when launch state is detected instead of at start
+    // NOW initialize objects that use the pointers
+    sm = new BurnoutStateMachine(dataSaver, lp, ad, verticalVelocityEstimator);
+    ap = new ApogeePredictor(*verticalVelocityEstimator, EMA_ALPHA, MINIMUM_CLIMB_VELOCITY);
 
-  // HAD TO COMMMENT OUT CAUSE SPACE CONSTRAINTS
-  // measurement = {telemData.sensorData["altitude"].altitude, (-1)*telemData.sensorData["acceleration"].acceleration.z}; //want y then ay
-  // KF.InitializeKalmanFilter(measurement);
+    // confirm initialization, setup sd data saver
+    sd_init = dataSaver->begin();
 
-  Serial.println("Finished setup");
+    // LED communication/verif
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+    previousTime = millis();
+
+    targetServoAngle = MIN_DEPLOYMENT_ANGLE; // Default to retracted
+    startCoastTime = 0;
+    communicateVerification(sd_init);
+
+    #ifdef SIM
+    SerialSim::getInstance().begin(&Serial, sm);
+    #endif
 }
 
 void loop()
+{   
+    #ifdef SIM
+    SerialSim::getInstance().update();
+    delay(10);
+    #endif
+
+    unsigned long loopStartTime = millis();
+
+    // init telem & telem sensor recording
+    telemData = telemetry.getTelemetry();
+
+    // if you ever change the orientation of the sensors, this WILL probably need to be adjusted
+    telemData.sensorData["magnetometer"].magnetic.x = telemData.sensorData["magnetometer"].magnetic.y * -1; 
+    telemData.sensorData["magnetometer"].magnetic.y = telemData.sensorData["magnetometer"].magnetic.x;
+
+    float currAlt = telemData.sensorData["altitude"].altitude; // will be used later so store
+
+    // update data points
+    aclX.data = telemData.sensorData["acceleration"].acceleration.x;
+    aclY.data = telemData.sensorData["acceleration"].acceleration.y;
+    aclZ.data = telemData.sensorData["acceleration"].acceleration.z;
+    alt.data = currAlt;
+
+    gyroX.data = telemData.sensorData["gyro"].gyro.x;
+    gyroX.timestamp_ms = telemData.timestamp;
+    gyroY.data = telemData.sensorData["gyro"].gyro.y;
+    gyroY.timestamp_ms = telemData.timestamp;
+    gyroZ.data = telemData.sensorData["gyro"].gyro.z;
+    gyroZ.timestamp_ms = telemData.timestamp;
+    temp.data = telemData.sensorData["temperature"].temperature;
+    temp.timestamp_ms = telemData.timestamp;
+    pres.data = telemData.sensorData["pressure"].pressure;
+    pres.timestamp_ms = telemData.timestamp;
+
+    unsigned long currTime = millis();
+    aclX.timestamp_ms = aclY.timestamp_ms = aclZ.timestamp_ms = alt.timestamp_ms = currTime; // record timestamp for data points
+
+    // save the data points to their respective data names
+    dataSaver->saveDataPoint(aclX, ACCELEROMETER_X);
+    dataSaver->saveDataPoint(aclY, ACCELEROMETER_Y);
+    dataSaver->saveDataPoint(aclZ, ACCELEROMETER_Z);
+    dataSaver->saveDataPoint(alt, ALTITUDE);
+    dataSaver->saveDataPoint(temp, TEMPERATURE);
+    dataSaver->saveDataPoint(pres, PRESSURE);
+    dataSaver->saveDataPoint(gyroX, GYROSCOPE_X);
+    dataSaver->saveDataPoint(gyroY, GYROSCOPE_Y);
+    dataSaver->saveDataPoint(gyroZ, GYROSCOPE_Z);
+
+    // update state we're in  (Do not update the ap or vve, because the state machine will do that)
+    // IMPORTANT: Do not update the vve until after launch, so it's vertical axis determination is correct
+    sm->update(aclX, aclY, aclZ, alt);
+
+    // get the current time
+    unsigned long nowTime = millis();
+    float dt = nowTime - previousTime; // time since last loop
+    previousTime = nowTime; 
+
+    if (dt > 0){
+        // Save the recriprocal of the time step (ms) to get HZ
+        float hz = 1000.0f / dt;
+        // Save this as a data point
+        dataSaver->saveDataPoint(DataPoint(nowTime, hz), AVERAGE_CYCLE_RATE);
+    }
+
+    // update apogee predictor
+    ap->update(); // update the apogee predictor with the current data points
+    float predApogee = ap->getPredictedApogeeAltitude_m();
+    dataSaver->saveDataPoint(DataPoint(millis(), predApogee), EST_APOGEE); // save the predicted apogee to the data saver
+    // Save time to apogee
+    dataSaver->saveDataPoint(DataPoint(millis(), ap->getTimeToApogee_s()), TIME_TO_APOGEE); // save the time to apogee to the data saver
+
+    if (sm->getState() == STATE_COAST_ASCENT) // we actually want to deploy
+    {
+        if(startCoastTime == 0)
+        {
+            startCoastTime = millis();
+        }
+
+        if(ap->getTimeToApogee_s() < FIN_RETRACTION_THRESHOLD_S || (millis() - startCoastTime) < FIN_EJECTION_DELAY_MS) // test fin full out to full in time
+        {
+            targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
+        }
+        
+        #ifdef TEST_FIN_DEPLOYMENT // for the 04/13/2025 flight to just test if the fins will deploy
+        else // if we're in SCA, deploy to the maximum possible angle (-10/+10)
+        {
+            targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
+        }
+        #endif
+
+        // currently very rudimentary, logic, should be replacing with something a bit more refined
+        #ifndef TEST_FIN_DEPLOYMENT
+        else {
+            if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins. + threshold so we don't make a sinusoid nightmare
+            {
+                targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
+    
+                /**
+                 * 
+                 * I'm considering making deployment logic a function of the overshoot ->
+                 * 
+                 * if overshooting, targetServoAngle = amt_overshooting_m * proportional gain 
+                 * targetServoAngle = constrain(targetAngle, MIN_DEPLOY, MAX_DEPLOY)
+                 * ms24.setAngle(targetServoAngle)
+                 * 
+                 * gives us a little more control over aggression of deployment as we launch this more & learn in the future, and has a bit
+                 * more finesse behind it than the current "if overshooting, max deploy"
+                 * 
+                 */
+            }
+            else
+            {
+                targetServoAngle = MIN_DEPLOYMENT_ANGLE; 
+            }
+        }
+        #endif
+    }
+    else    
+    { // If we're not in SCA, stay 0 so we don't break the fins
+        targetServoAngle = MIN_DEPLOYMENT_ANGLE; 
+    }
+
+    // set angle and log at the end of each iteration
+    dataSaver->saveDataPoint(DataPoint(millis(), targetServoAngle), FIN_DEPLOYMENT_AMOUNT); // save the servo angle to the data saver
+    ms24.setAngle(targetServoAngle); 
+}
+
+/***
+ * initally deploys fins to show that we are in the communicate verification function
+ * retracts fins before entering loop
+ * if fins deploy after that point, we have an error
+ */
+void communicateVerification(bool sd_init)
 {
-  telemData = telemetry.getTelemetry();
+    // moving fins to visually show we're in comms check
+    ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // different from full deploy to visually confirm we're undergoing comms verification
+    delay(COMMUNICATION_VERIFICATION_DELAY);
+    ms24.setAngle(MIN_DEPLOYMENT_ANGLE);
+    delay(COMMUNICATION_VERIFICATION_DELAY);
 
-  ahrs.update(telemData.sensorData["gyro"].gyro.x,
-              telemData.sensorData["gyro"].gyro.y,
-              telemData.sensorData["gyro"].gyro.z,
-              telemData.sensorData["acceleration"].acceleration.x,
-              telemData.sensorData["acceleration"].acceleration.y,
-              telemData.sensorData["acceleration"].acceleration.z,
-              telemData.sensorData["magnetometer"].magnetic.x,
-              telemData.sensorData["magnetometer"].magnetic.y,
-              telemData.sensorData["magnetometer"].magnetic.z);
-
-  float rx, ry, rz;
-  ahrs.getRotationVector(&rx, &ry, &rz);
-  // Serial.printf("rx=%f \try=%f \trz=%f", rx, ry, rz);
-  float gx, gy, gz;
-  ahrs.getGravityVector(&gx, &gy, &gz);
-  // Serial.printf("\tgx=%f \tgy=%f \tgz=%f", gx, gy, gz);
-
-  // AHRSMap ahrsData;
-  // ahrsData["rx"] = rx;
-  // ahrsData["ry"] = ry;
-  // ahrsData["rz"] = rz;
-  // ahrsData["gx"] = gx;
-  // ahrsData["gy"] = gy;
-  // ahrsData["gz"] = gz;
-
-  // flightStatus.newTelemetry(telemData.sensorData["acceleration"].acceleration.z, telemData.sensorData["pressure"].pressure);
-  
-  
-  // Serial.printf("altitude = %f, \t y-acceleration = %f\t", measurement[0], measurement[1]);
-  // //The next 3 lines should be run on loop after launch is detected
-  // measurement = {telemData.sensorData["altitude"].altitude, (float)(-9.81+telemData.sensorData["acceleration"].acceleration.z)}; //want y then ay- NOT g //eventually needs to move to AHRS vertical accel
-  // KF.Update(measurement);
-  // KF.Predict();
-  // Serial.printf("x_hat: \t%f m, \t%f m/s, \t%f m/s/s\n", KF.x_hat[0], KF.x_hat[1], KF.x_hat[2]);
-  
-  //sdLogger.writeData(telemData, ahrsData, flightStatus.getStage());
+    // init loop to check sensors & sd ptr
+    SensorsActivated sensorsActivated = telemetry.getSensorsActivated();
+    std::vector<bool> verifiables = {sensorsActivated.mag, sensorsActivated.bmp, sensorsActivated.imu, sd_init}; 
+    for (bool verifiable : verifiables)
+    {
+        if (verifiable)
+        {
+            ms24.setAngle(MIN_DEPLOYMENT_ANGLE); // in is good if everything is working
+            delay(COMMUNICATION_VERIFICATION_DELAY);
+        }
+        else
+        {
+            ms24.setAngle(MAX_DEPLOYMENT_ANGLE); // out is bad if something goes wrong
+            delay(COMMUNICATION_VERIFICATION_DELAY);
+        }
+    }
+    delay(COMMUNICATION_VERIFICATION_DELAY); // delay before returning to main
 }
