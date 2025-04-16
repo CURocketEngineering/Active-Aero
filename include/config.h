@@ -11,7 +11,7 @@
 #include "data_handling/DataPoint.h"
 #include "data_handling/DataSaverBigSD.h"
 
-#define TEST_LAUNCH 1 // for the 04/13/2025 flight to just test if the fins will deploy
+#define TEST_FIN_DEPLOYMENT 1 // for testing fins 
 
 // mission configuration variables
 #define TARGET_APOGEE 10000

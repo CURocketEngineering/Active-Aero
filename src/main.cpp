@@ -143,7 +143,8 @@ void loop()
         {
             targetServoAngle = MIN_DEPLOYMENT_ANGLE; // re-declare in case SCA -> SD
         }
-        #ifdef TEST_LAUNCH // for the 04/13/2025 flight to just test if the fins will deploy
+        
+        #ifdef TEST_FIN_DEPLOYMENT // for the 04/13/2025 flight to just test if the fins will deploy
         else // if we're in SCA, deploy to the maximum possible angle (-10/+10)
         {
             targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
@@ -151,9 +152,9 @@ void loop()
         #endif
 
         // currently very rudimentary, logic, should be replacing with something a bit more refined
-        #ifndef TEST_LAUNCH
+        #ifndef TEST_FIN_DEPLOYMENT
         else {
-            if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins
+            if(ap->getPredictedApogeeAltitude_m() > TARGET_APOGEE + OVERSHOOT_THRESHOLD) // if we're going to overshoot, deploy the fins. + threshold so we don't make a sinusoid nightmare
             {
                 targetServoAngle = MAX_DEPLOYMENT_ANGLE; 
     
