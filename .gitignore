@@ -1,6 +1,18 @@
 .pio
 .vscode
-.csv
-.env
 
 .DS_Store
+
+# environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# file types
+*.png 
+*.csv 
+*.csv#
