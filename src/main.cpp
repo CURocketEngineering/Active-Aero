@@ -1,26 +1,28 @@
 #include "config.h"
+#include "common/globals.h"
+#include "simulation/Serial_Sim.h"
 
-VerticalVelocityEstimator* verticalVelocityEstimator;
-LaunchPredictor *lp;
-ApogeeDetector *ad;
-ServoInterface ms24;
+// VerticalVelocityEstimator* verticalVelocityEstimator;
+// LaunchPredictor *lp;
+// ApogeeDetector *ad;
+// ServoInterface ms24;
 
-// these values when initialized are going to be pointing to null val - they're better definined in setup
-BurnoutStateMachine* sm = nullptr;
-ApogeePredictor* ap = nullptr; // 0.2 is the alpha for the EMA, 1.0 is the minimum climb velocity
+// // these values when initialized are going to be pointing to null val - they're better definined in setup
+// BurnoutStateMachine* sm = nullptr;
+// ApogeePredictor* ap = nullptr; // 0.2 is the alpha for the EMA, 1.0 is the minimum climb velocity
 
-DataSaverBigSD* dataSaver;
-DataPoint aclX, aclY, aclZ, alt, temp, pres, gyroX, gyroY, gyroZ;
+// DataSaverBigSD* dataSaver;
+// DataPoint aclX, aclY, aclZ, alt, temp, pres, gyroX, gyroY, gyroZ;
 
-Telemetry telemetry; 
-TelemetryData telemData; 
+// Telemetry telemetry; 
+// TelemetryData telemData; 
 
-float servoAngle; // servo angle global
-double baseAlt;
-unsigned long previousTime;
-bool sd_init = false;
-float targetServoAngle;
-uint32_t startCoastTime;
+// float servoAngle; // servo angle global
+// double baseAlt;
+// unsigned long previousTime;
+// bool sd_init = false;
+// float targetServoAngle;
+// uint32_t startCoastTime;
 
 void communicateVerification(bool sd_init);
 

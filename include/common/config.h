@@ -3,14 +3,6 @@
 
 #include "ArduinoHAL.h"
 
-#include "telemetry.h"
-#include "servointerface.h"
-#include "state_estimation/ApogeePredictor.h"
-#include "state_estimation/BurnoutStateMachine.h" 
-#include "data_handling/DataNames.h"
-#include "data_handling/DataPoint.h"
-#include "data_handling/DataSaverBigSD.h"
-
 #define TEST_FIN_DEPLOYMENT 1 // for testing fins 
 
 // mission configuration variables
