@@ -29,3 +29,4 @@ extern unsigned long previousTime;
 extern bool sd_init;
 extern uint32_t startCoastTime;
 extern ServoInterface ms24;
+extern float currAlt;
