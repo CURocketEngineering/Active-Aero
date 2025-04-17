@@ -1,5 +1,8 @@
 #pragma once
 
+#include "common/config.h"
+#include "common/globals.h"
+
 /***
  * initally deploys fins to show that we are in the communicate verification function
  * retracts fins before entering loop

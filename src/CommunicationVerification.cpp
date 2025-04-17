@@ -1,6 +1,4 @@
-#include "common/config.h"
-#include "common/globals.h"
-
+#include "core/CommunicationVerification.h"
 
 /***
  * initally deploys fins to show that we are in the communicate verification function

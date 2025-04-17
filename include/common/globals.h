@@ -6,7 +6,6 @@
 #include "data_handling/DataPoint.h"
 #include "data_handling/DataSaverBigSD.h"
 
-
 VerticalVelocityEstimator* verticalVelocityEstimator;
 LaunchPredictor *lp;
 ApogeeDetector *ad;
