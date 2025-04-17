@@ -4,6 +4,7 @@
 
 #include "core/Setup.h"
 #include "core/CommunicationVerification.h"
+#include "core/TelemetryProcessing.h"
 
 void main()
 {   
@@ -19,6 +20,8 @@ void main()
         #endif
 
         unsigned long loopStartTime = millis();
+
+        updateTelem(); // update the telemetry data
 
         // update state we're in  (Do not update the ap or vve, because the state machine will do that)
         // IMPORTANT: Do not update the vve until after launch, so it's vertical axis determination is correct
