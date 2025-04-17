@@ -26,7 +26,7 @@ static DataSaverBigSD dataSaver(SD_CHIP_SELECT);
 
 static VerticalVelocityEstimator vve;
 static ApogeeDetector            ad(OVERSHOOT_THRESHOLD);
-static LaunchPredictor           lp(ACCEL_THRESHOLD_MS2,
+static LaunchDetector           lp(ACCEL_THRESHOLD_MS2,
                                     LAUNCH_WINDOW_SIZE_MS,
                                     LAUNCH_WINDOW_INTERVAL_MS);
 static BurnoutStateMachine      *sm  = nullptr;
@@ -78,7 +78,7 @@ void test_servo_deploys_to_max()
 // Helper: run the real flight code long enough to reach Coast‑Ascent
 //         (about 2–3 s on the bench).  We purposely do not fake any
 //         sensor readings; instead we just wait for the IMU to report
-//         near‑zero acceleration, which causes LaunchPredictor to time‑out
+//         near‑zero acceleration, which causes LaunchDetector to time‑out
 //         and the state machine to enter SCA.
 // ---------------------------------------------------------------------------
 static void armStateMachine()

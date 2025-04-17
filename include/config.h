@@ -43,7 +43,7 @@
 #define EMA_ALPHA 0.2f
 #define MINIMUM_CLIMB_VELOCITY 1.0f
 
-// launch predictor constants
+// launch detector constants
 #define ACCEL_THRESHOLD_MS2 40 // m/s^2
 #define LAUNCH_WINDOW_SIZE_MS 500 // millisec
 #define LAUNCH_WINDOW_INTERVAL_MS 25  // millisec

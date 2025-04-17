@@ -1,7 +1,7 @@
 #include "config.h"
 
 VerticalVelocityEstimator* verticalVelocityEstimator;
-LaunchPredictor *lp;
+LaunchDetector *lp;
 ApogeeDetector *ad;
 ServoInterface ms24;
 
@@ -37,7 +37,7 @@ void setup()
     // init new pointers here (ld, ap, vve, etc.)
     verticalVelocityEstimator = new VerticalVelocityEstimator();
     ad = new ApogeeDetector(1.0f); // 1.0f is the apogee threshold in meters
-    lp = new LaunchPredictor(ACCEL_THRESHOLD_MS2, LAUNCH_WINDOW_SIZE_MS, LAUNCH_WINDOW_INTERVAL_MS); // blanket values ripped from MARTHA
+    lp = new LaunchDetector(ACCEL_THRESHOLD_MS2, LAUNCH_WINDOW_SIZE_MS, LAUNCH_WINDOW_INTERVAL_MS); // blanket values ripped from MARTHA
 
     // NOW initialize objects that use the pointers
     sm = new BurnoutStateMachine(dataSaver, lp, ad, verticalVelocityEstimator);
